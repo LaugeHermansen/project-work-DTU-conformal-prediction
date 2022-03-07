@@ -57,7 +57,7 @@ def get_quantile(model, calibration_dl, alpha, score_function) -> float:
     
     Return:
     -------
-        - the empirical alpha quantile of calibration data
+        - the empirical 1-alpha quantile of calibration data
     """
     s = torch.vstack(*[score_function(model(x),y) for (x,y) in calibration_dl])
     n = len(s)
