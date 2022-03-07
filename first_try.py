@@ -30,18 +30,99 @@ def load_data(batch_size = 50, data_workers = 1, test_size_train = 0.4, test_siz
 
     return train_dl, validation_dl, test_dl
 
+def score_function(output: torch.Tensor,y_true: torch.Tensor = None) -> torch.Tensor:
+    """
+    calculate score function for n data points
 
-validation_accuracies = np.load('bayesian_optimization_accuracies_val.npy')
-hyperparameters = np.load('bayesian_optimization_hyperparameters.npy')
-hyperparameter = hyperparameters[np.argmax(validation_accuracies)]
+    Parameters:
+    -----------
+    -    output: (n,m) torch tensor array - the softmax output
+    -    y_true: (n,) torch tensor - true categories - zero indexed
 
-_, calibration_dl, validation_dl = load_data()
+    Return:
+    -------
+    -    (n,) tensor - score function
+    """
+    if y_true == None: return output
+    else:              return output[:,y_true]
 
-model = CNN_class(*hyperparameter[2:])
-model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
+def get_quantile(model, calibration_dl, alpha, score_function) -> float:
+    """
+    get the empirical 1-alpha quantile of calibration data
 
-test_image = next(iter(validation_dl))
+    Parameters:
+    ----------
+        - calibration_dl: torch Dataloader object
+        - alpha: significance level of prediction set
+    
+    Return:
+    -------
+        - the empirical alpha quantile of calibration data
+    """
+    s = torch.vstack(*[score_function(model(x),y) for (x,y) in calibration_dl])
+    n = len(s)
+    q = np.ceil((n+1)(1-alpha))/n
+    return np.quantile(s, q)
 
-def score_function():
+
+def predict(model, validation_dl, quantile):
+    """get prediciton set
+
+    Parameters:
+    ----------
+    - model: you know
+    - test_dl: test set torch data loader
+    - quantile: 1-alpha quantile
+
+    Return:
+    -------
+    - prediction set: for each data point
+    - y_true: the true labels
+    """
+    prediction_set = []
+    y_true = []
+    for (x,y) in validation_dl:
+        y_out = model(x)
+        prediction_set.append(y_out[y_out <= quantile])
+        y_true.append(y)
+    prediction_set = torch.vstack(*prediction_set)
+    y_true = torch.vstack(*y_true)
+    return prediction_set, y_true
+
+def evaluate_coverage(prediction_sets,y_true):
+    """
+    estimated coverage of one trial
+
+    Parameters:
+    ------
+    - prediction_sets: (n,m) np array
+    - y_true: (n,)
+
+    Return:
+    -------
+    C_j: estimated coverage
+
+    """
+    return np.mean(map(lambda x: x[1] in x[0], zip(y_true, prediction_sets)))
+
+if __name__ == '__main__':
+    
+    validation_accuracies = np.load('bayesian_optimization_accuracies_val.npy')
+    hyperparameters = np.load('bayesian_optimization_hyperparameters.npy')
+    hyperparameter = hyperparameters[np.argmax(validation_accuracies)]
+
+    _, calibration_dl, validation_dl = load_data()
+
+    model = CNN_class(*hyperparameter[2:])
+    model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
+
+    test_image = next(iter(validation_dl))
+    alpha = 0.05
+    quantile = get_quantile(model,calibration_dl,alpha,score_function)
+    prediction_set,y_true = predict(model, validation_dl, quantile)
+    coverage = evaluate_coverage(prediction_set,y_true)
+
+    print(coverage)
+
 
 
