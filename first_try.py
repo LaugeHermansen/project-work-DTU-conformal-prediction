@@ -44,7 +44,7 @@ def score_function(output: torch.Tensor,y_true: torch.Tensor = None) -> torch.Te
     -    (n,) tensor - score function
     """
     if y_true == None: return output
-    else:              return output[:,y_true]
+    else:              return output[torch.arange(len(y_true)), y_true]
 
 def get_quantile(model, calibration_dl, alpha, score_function) -> float:
     """
@@ -59,10 +59,10 @@ def get_quantile(model, calibration_dl, alpha, score_function) -> float:
     -------
         - the empirical 1-alpha quantile of calibration data
     """
-    s = torch.vstack(*[score_function(model(x),y) for (x,y) in calibration_dl])
+    s = torch.cat([score_function(model(x),y) for (x,y) in calibration_dl])
     n = len(s)
-    q = np.ceil((n+1)(1-alpha))/n
-    return np.quantile(s, q)
+    q = np.ceil((n+1)*(1-alpha))/n
+    return torch.quantile(s, q)
 
 
 def predict(model, validation_dl, quantile):
@@ -83,10 +83,10 @@ def predict(model, validation_dl, quantile):
     y_true = []
     for (x,y) in validation_dl:
         y_out = model(x)
-        prediction_set.append(y_out[y_out <= quantile])
+        prediction_set.append(y_out <= quantile)
         y_true.append(y)
-    prediction_set = torch.vstack(*prediction_set)
-    y_true = torch.vstack(*y_true)
+    prediction_set = torch.vstack(prediction_set)
+    y_true = torch.cat(y_true)
     return prediction_set, y_true
 
 def evaluate_coverage(prediction_sets,y_true):
@@ -103,7 +103,7 @@ def evaluate_coverage(prediction_sets,y_true):
     C_j: estimated coverage
 
     """
-    return np.mean(map(lambda x: x[1] in x[0], zip(y_true, prediction_sets)))
+    return np.mean([y_hat[y].item() for y, y_hat in zip(y_true, prediction_sets)])
 
 if __name__ == '__main__':
     
