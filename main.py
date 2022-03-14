@@ -10,9 +10,10 @@ from sklearn.model_selection import train_test_split
 import torch.utils.data as data_utils
 from torch.utils.data import DataLoader
 from typing import Tuple
+from tqdm import tqdm
 
 
-def load_data(batch_size = 50, data_workers = 1, test_size_train = 0.4, test_size_test = 0.5) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_size_test = 0.5) -> Tuple[DataLoader, DataLoader, DataLoader]:
     transform = transforms.Compose([transforms.ToTensor()])
 
     training_set = datasets.EMNIST(root="./data", split="byclass", train=True,  download=True, transform=transform)
@@ -44,15 +45,21 @@ if __name__ == '__main__':
 
     model1 = lambda x: model(x).detach().numpy()
 
-    for (x_cal,y_cal) in calibration_dl:
-        CP_model = conformal_prediction.CP_softmax(model=model1,
-                                                   calibration_set_x=x_cal,
-                                                   calibration_set_y=y_cal.detach().numpy(),
-                                                   alpha=0.05)
+    accuracies = []
+    for (x_cal,y_cal) in tqdm(calibration_dl):
+        CP_model = conformal_prediction.CP_cumulative_softmax(model=model1,
+                                                              calibration_set_x=x_cal,
+                                                              calibration_set_y=y_cal.detach().numpy(),
+                                                              alpha=0.05)
+        temp_acc =[]
         for (x_val, y_val) in validation_dl:
             conf_intervals = CP_model.predict(x_val)
 
-            acc = np.mean([y_hat[y].detach().numpy() for y, y_hat in zip(y_val.detach().numpy(), conf_intervals)])
+            acc = np.mean([y_hat[y] for y, y_hat in zip(y_val.detach().numpy(), conf_intervals)])
+            temp_acc.append(acc)
+        accuracies.append(temp_acc)
 
-            print(acc)
+    print(accuracies)
+
+
 

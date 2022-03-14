@@ -43,8 +43,8 @@ def score_function(output: torch.Tensor,y_true: torch.Tensor = None) -> torch.Te
     -------
     -    (n,) tensor - score function
     """
-    if y_true == None: return output
-    else:              return output[torch.arange(len(y_true)), y_true]
+    if y_true == None: return -output
+    else:              return -output[torch.arange(len(y_true)), y_true]
 
 def get_quantile(model, calibration_dl, alpha, score_function) -> float:
     """
@@ -83,7 +83,8 @@ def predict(model, validation_dl, quantile):
     y_true = []
     for (x,y) in validation_dl:
         y_out = model(x)
-        prediction_set.append(y_out <= quantile)
+        scores = score_function(y_out)
+        prediction_set.append(scores <= quantile)
         y_true.append(y)
     prediction_set = torch.vstack(prediction_set)
     y_true = torch.cat(y_true)
@@ -104,6 +105,7 @@ def evaluate_coverage(prediction_sets,y_true):
 
     """
     return np.mean([y_hat[y].item() for y, y_hat in zip(y_true, prediction_sets)])
+    # What does y_hat[y].item() do? Are we not checking a specific index? and then calling item on it? Is this somehow like in?
 
 if __name__ == '__main__':
     
@@ -123,6 +125,7 @@ if __name__ == '__main__':
     coverage = evaluate_coverage(prediction_set,y_true)
 
     print(coverage)
+
 
 
 
