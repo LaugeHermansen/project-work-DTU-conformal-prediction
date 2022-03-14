@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_size_test = 0.5) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    transform = transforms.Compose([transforms.ToTensor()])
+    transform = transforms.Compose([transforms.ToTensor()]) # transforms.LinearTransformation(torch.Tensor([[1, 0, 0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]]), torch.Tensor
 
     training_set = datasets.EMNIST(root="./data", split="byclass", train=True,  download=True, transform=transform)
     test_set = datasets.EMNIST(root="./data", split="byclass", train=False,  download=True, transform=transform)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     model = CNN_class(*hyperparameter[2:])
     model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
 
-    model1 = lambda x: model(x).detach().numpy()
+    model1 = lambda x: torch.nn.functional.softmax(model(torch.permute(x, (0,1,3,2))), dim=1).detach().numpy()
 
     accuracies = []
     for (x_cal,y_cal) in tqdm(calibration_dl):
