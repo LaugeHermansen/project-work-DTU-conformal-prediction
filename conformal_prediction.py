@@ -2,12 +2,11 @@ import numpy as np
 
 class conformal():
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha):
-        self.calibration_set_x = calibration_set_x
-        self.calibration_set_y = calibration_set_y
+
         self.model = model
         self.alpha = alpha
+        self.calibrate(calibration_set_x, calibration_set_y)
 
-        self.q = self.quantile(alpha)
 
     def score_distribution(self):
         """
@@ -49,6 +48,7 @@ class conformal():
         scores = self.score_distribution()
 
         return np.quantile(scores, q)
+    
 
     def predict(self, X):
         """
@@ -59,6 +59,14 @@ class conformal():
             An interval or set of confidence
         """
         raise NotImplementedError
+
+    def calibrate(self,calibration_set_x, calibration_set_y):
+        self.calibration_set_x = calibration_set_x
+        self.calibration_set_y = calibration_set_y
+        self.q = self.quantile(self.alpha)
+
+    def __call__(self,X):
+       return self.predict(self,X)
 
 
 class CP_softmax(conformal):
