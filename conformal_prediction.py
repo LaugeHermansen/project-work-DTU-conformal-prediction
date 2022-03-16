@@ -127,6 +127,9 @@ class CP_cumulative_softmax(Conformal):
         Returns:
             All scores of the labels of the calibration set
         """
+        #maybe do this
+        #return self.score(calibration_set_x,calibration_set_y)
+
         all_scores = self.model(calibration_set_x)
         indices = np.argsort(-all_scores, axis=1) # The minus is to get the max element in front 
         indices_reverse = np.argsort(indices,  axis=1)
@@ -136,7 +139,8 @@ class CP_cumulative_softmax(Conformal):
         true_scores = [sum(sorted_score[:true_label+1]) for sorted_score, true_label in zip(sorted_scores, true_labels_idx)]
         return true_scores
 
-    def score(self, model_out):
+
+    def score(self, model_out, calibration_set_y = None):
         """
         Compute score of new data
         Args:
@@ -150,6 +154,11 @@ class CP_cumulative_softmax(Conformal):
 
         scores = np.cumsum(sorted, axis = 1)
         scores = np.take_along_axis(scores, reverse_indices, axis=1)
+
+        # maybe do this
+        # if calibration_set_y != None:
+        #     scores = scores[np.arange(len(scores)), calibration_set_y]
+
         return scores
 
     def predict(self, X):
