@@ -11,6 +11,7 @@ import torch.utils.data as data_utils
 from torch.utils.data import DataLoader
 from typing import Tuple
 from tqdm import tqdm
+from matplotlib import pyplot as plt
 
 
 def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_size_test = 0.5) -> Tuple[DataLoader, DataLoader, DataLoader]:
@@ -33,12 +34,28 @@ def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_si
     return train_dl, validation_dl, test_dl
 
 
+def plot_letters(n, dl):
+    batch = next(iter(dl))
+    imgs = batch[0].detach().numpy()
+
+    fig, axs = plt.subplots(1, n)
+    fig.suptitle('Handwritten digits')
+    for i in range(n):
+        plt.sca(axs[i])
+        plt.imshow(imgs[i].reshape(28, 28).T, interpolation='nearest')
+
+    plt.show()
+
+
+
 if __name__ == '__main__':
     validation_accuracies = np.load('bayesian_optimization_accuracies_val.npy')
     hyperparameters = np.load('bayesian_optimization_hyperparameters.npy')
     hyperparameter = hyperparameters[np.argmax(validation_accuracies)]
 
     _, calibration_dl, validation_dl = load_data()
+
+    plot_letters(6, calibration_dl)
 
     model = CNN_class(*hyperparameter[2:])
     model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
