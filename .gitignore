@@ -1,3 +1,4 @@
 data/
 **/__pycache__
 .idea
+loss_func_in_q-reg.ggb

@@ -11,10 +11,11 @@ import torch.utils.data as data_utils
 from torch.utils.data import DataLoader
 from typing import Tuple
 from tqdm import tqdm
+from matplotlib import pyplot as plt
 
 
 def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_size_test = 0.5) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    transform = transforms.Compose([transforms.ToTensor()])
+    transform = transforms.Compose([transforms.ToTensor()]) # transforms.LinearTransformation(torch.Tensor([[1, 0, 0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]]), torch.Tensor
 
     training_set = datasets.EMNIST(root="./data", split="byclass", train=True,  download=True, transform=transform)
     test_set = datasets.EMNIST(root="./data", split="byclass", train=False,  download=True, transform=transform)
@@ -33,6 +34,20 @@ def load_data(batch_size = 500, data_workers = 1, test_size_train = 0.4, test_si
     return train_dl, validation_dl, test_dl
 
 
+def plot_letters(n, dl):
+    batch = next(iter(dl))
+    imgs = batch[0].detach().numpy()
+
+    fig, axs = plt.subplots(1, n)
+    fig.suptitle('Handwritten digits')
+    for i in range(n):
+        plt.sca(axs[i])
+        plt.imshow(imgs[i].reshape(28, 28).T, interpolation='nearest')
+
+    plt.show()
+
+
+
 if __name__ == '__main__':
     validation_accuracies = np.load('bayesian_optimization_accuracies_val.npy')
     hyperparameters = np.load('bayesian_optimization_hyperparameters.npy')
@@ -40,10 +55,12 @@ if __name__ == '__main__':
 
     _, calibration_dl, validation_dl = load_data()
 
+    plot_letters(6, calibration_dl)
+
     model = CNN_class(*hyperparameter[2:])
     model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
 
-    model1 = lambda x: model(x).detach().numpy()
+    model1 = lambda x: torch.nn.functional.softmax(model(torch.permute(x, (0,1,3,2))), dim=1).detach().numpy()
 
     accuracies = []
     for (x_cal,y_cal) in tqdm(calibration_dl):
