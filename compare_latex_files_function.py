@@ -30,6 +30,10 @@ def compare(filename_old, filename_new, path = 'latex_comparisons/', print_compa
         raw_output.append(string)
         colored_output.append(string)
 
+    output('')
+    output(f' --- Comparing "{filename_old}.tex" and "{filename_new}.tex" --- ')
+    output('')
+
     if 'compare_data_files' not in os.listdir():
         os.mkdir('compare_data_files')
 
