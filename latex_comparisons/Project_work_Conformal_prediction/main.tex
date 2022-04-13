@@ -1,0 +1,122 @@
+\documentclass[10pt,oneside,a4paper,english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2cm,headheight=26pt,includeheadfoot]{geometry}
+\usepackage[english]{babel}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage[framed, numbered]{matlab-prettifier}
+\usepackage{changepage}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{setspace}
+\usepackage{multirow}
+\usepackage{titling}
+\usepackage{float}
+\usepackage{comment}
+\usepackage{booktabs}
+\usepackage{indentfirst}
+\usepackage{lscape}
+\usepackage{booktabs,caption}
+\usepackage[flushleft]{threeparttable}
+\usepackage[danish]{nomencl}
+\usepackage{xcolor}
+\usepackage{lipsum}
+% \usepackage[backend=biber, sorting=ynt]{biblatex}
+% \addbibresource{document.bib}
+\usepackage{pdfpages}
+\usepackage{amssymb}
+\usepackage{bbm}
+
+
+% \usepackage{relsize}
+
+% --- set footer and header ---
+\pagestyle{fancy}
+\fancyhf{}
+
+\setlength{\parindent}{0em}
+\setlength{\parskip}{10pt}
+
+\title{Active ML and Agency: Miniproject 1} % to reference as \title, dont use \maketitle
+\makeatletter\let\Title\@title\makeatother
+
+
+
+\lstset{language=Matlab,
+style=Matlab-editor,
+basicstyle=\normalsize\mlttfamily,
+numbers=left,
+numberstyle={\scriptsize\color{black}},			% size of the numbers
+numbersep=0.5cm											
+}
+
+\newlist{steps}{enumerate}{1}
+\setlist[steps, 1]{leftmargin=1.5cm,label = Step \arabic*:}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+
+%\lhead{\Title}
+\rhead{\nouppercase{\rightmark}}
+\lhead{\Title}
+\rfoot{\includegraphics[height=1.25cm]{root/logo.pdf}} % right header logo
+\setlength\headheight{16pt}
+\setlength{\footskip}{50pt}
+\lhead{\Title} %rightH title
+\cfoot{\thepage}
+
+% --- End of page settings ---
+
+% Math symbols and operators
+\DeclareMathOperator*{\argmax}{argmax} % thin space, limits underneath in displays
+\newcommand{\Tau}[0]{\scalebox{1.58}{$\tau$}}
+\newcommand{\X}[0]{\mathcal{X}}
+\renewcommand{\d}[0]{\text{d}}
+\newcommand{\Y}[0]{\mathcal{Y}}
+\DeclareMathOperator*{\argmin}{\text{argmin}}
+% \newcommand{\Y}[0]{\scalebox{0.85}{$\mathcal{Y}$}}
+\newcommand{\ceil}[1]{\lceil {#1} \rceil}
+\newcommand{\doubleR}[0]{\mathbb{R}}
+\newcommand{\doubleOne}[0]{\mathbbm{1}}
+\DeclareMathOperator*{\doubleE}{\mathbb{E}}
+\DeclareMathOperator*{\doubleP}{\mathbb{P}}
+
+% begin document
+
+\begin{document}
+\pagenumbering{roman} 
+\input{sources/0_frontpage.tex}
+
+\newpage
+\pagenumbering{arabic} 
+\fancyfoot[C]{Page \thepage\ of \pageref{EndOfText}}
+
+\section*{Introduction} \label{ch1}
+\input{sources/1_introduction.tex}
+
+\section*{Theory} \label{ch2}
+\input{sources/2_theory}
+
+\section*{Data} \label{ch3}
+\input{sources/3_data}
+\section*{Methods} \label{ch4}
+\input{sources/4_methods}
+\label{EndOfText}
+
+\newpage
+\pagenumbering{Roman} 
+\fancyfoot[C]{Page \thepage\ of I}
+\rhead{References}
+% \bibliographystyle{ieeetr}
+% \printbibliography
+\label{endOfDoc}
+\end{document}
