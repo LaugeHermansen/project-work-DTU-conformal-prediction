@@ -174,3 +174,51 @@ class CP_cumulative_softmax(Conformal):
 
         return scores <= self.q
 
+class CP_regression(Conformal):
+    def score_distribution(self, calibration_set_x, calibration_set_y):
+        """
+        Compute the scores of the calibration set.
+
+        Args:
+            Takes nothing as the calibration set is in the init
+
+        Returns:
+            All scores of the labels of the calibration set
+        """
+        #maybe do this
+        #return self.score(calibration_set_x,calibration_set_y)
+
+        preds = self.model(calibration_set_x)
+        scores = np.max([calibration_set_y - preds[:, 0],  preds[:, -1] - calibration_set_y], axis=1)
+        
+        return scores
+
+
+    def score(self, model_out, calibration_set_y = None):
+        """
+        Compute score of new data
+        Args:
+            model_out: The outputs of the model given the new data points
+        Returns:
+            Scores of the model_out of the new data points
+        """
+
+        # maybe do this
+        # if calibration_set_y != None:
+        #     scores = scores[np.arange(len(scores)), calibration_set_y]
+        model_out[:, 0] -= self.q
+        model_out[:, -1] += self.q
+        return 
+
+    def predict(self, X):
+        """
+        Compute confidence interval for new data points
+        Args:
+            X: The new data points
+        Returns:
+            An interval or set of confidence
+        """
+        y_pred = self.model.predict(X)
+        scores = self.score(y_pred)
+
+        return scores <= self.q
