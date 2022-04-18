@@ -1,0 +1,42 @@
+
+\chapter{Introduction to conformal prediction}
+
+\section{Introduction to project}
+Usually in predictive machine learning, the model returns a point estimate of a target variable, either discrete or continuous, based on some feature variables. However, a lot of the time the model provides no associated uncertainty estimate for its prediction, and in the cases where an uncertainty estimate is provided - these estimates may be dependent upon various assumptions from the model making the uncertainty estimates potentially over/under-confident w.r.t. the validation data. 
+
+In applications where decisions are critical, the transparency of the model's prediction is important for making educated decisions. A calibrated uncertainty estimate adds to this transparency as it enables adaptive attenuation of trust in a model's prediction. This is applicable to many real world implementations of machine learning models. 
+\begin{itemize}
+    \item In a medical setting, the model may be helping medical professionals with diagnosing patients - a high, calibrated uncertainty for a prediction would function as a warning light.
+    \item In a financial setting, the model may be used to price certain services rapidly and automatically - a high, calibrated uncertainty could indicate that human interaction for making a decision is necessary.
+    \item In the automobile setting, the model may be used to segment and classify obstructions via the video feeds of a self-driving car - a high, calibrated uncertainty could tell the car to drive more carefully around said obstruction.
+\end{itemize}
+
+The aim of this project is to introduce the reader to conformal prediction (CP), which is a mathematical framework for creating calibrated confidence bounds on model predictions. A confidence bound is simply an expansion of a model's point prediction into a prediction set. In the case of classification, the prediction set is merely a set of predicted classes, while in the case of regression, the prediction set is a range of predictions. The size of this prediction set is a calibrated, uncertainty estimate.
+%
+CP introduces the concept of coverage for the prediction set. It states that on average the probability of the true label being in the prediction set is guaranteed to be greater than or equal to $1-\alpha$. The phrase 'on average' means that it will vary a bit, with different calibration sets. The calibration setCP is the partition of the data used to train the conformal predictor, and will be discussed later. 
+%
+% CP introduces the concept of coverage for the prediction set, which states that the prediction set (on average) has probability will be on average $1 - \alpha$ of including the true label of the target variable, where $\alpha \in ~]0; 1[$ is a hyperparameter. The almost magical strength of CP is that applying it guarantees coverage on average.
+%
+%
+Almost even more magical, is that CP is a distribution-free framework and relies upon few assumptions. It is therefore a versatile tool applicable in many different places.
+\\
+\\
+The overall aims of the project are as follows:
+\begin{itemize}
+    \item Investigate and understand the theory behind CP and implement CP with real world data sets and models.
+    \item How useful is CP in practice, and how does it compare to other techniques, e.g. Gaussian Process?
+    \item Create an extension of CP with transformer networks on sequential data, which violates the exchangability assumption.
+\end{itemize}
+
+The general outline of the project is as follows:
+\begin{enumerate}
+    \item Informal introduction to CP to give an overview of the general ideas.
+    \item Mathematical walkthrough of CP to create a rigorous foundation. 
+    \item How to do statistical evaluation of implementations of CP to verify correct implementation.
+    \item Description and considerations of the dataset used.
+    \item Evaluation of CP on a convolutional neural network and logistic regression models.
+    \item Comparison of CP vs. gaussian processes.
+    \item Extension of CP to work with sequential data while getting around the violation of the exchangability assumption.
+\end{enumerate}
+
+
