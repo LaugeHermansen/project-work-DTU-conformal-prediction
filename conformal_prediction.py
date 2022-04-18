@@ -189,26 +189,9 @@ class CP_regression(Conformal):
         #return self.score(calibration_set_x,calibration_set_y)
 
         preds = self.model(calibration_set_x)
-        scores = np.max([calibration_set_y - preds[:, 0],  preds[:, -1] - calibration_set_y], axis=1)
+        scores = np.max([preds[:, 0] - calibration_set_y, calibration_set_y - preds[:, -1]], axis=0)
         
         return scores
-
-
-    def score(self, model_out, calibration_set_y = None):
-        """
-        Compute score of new data
-        Args:
-            model_out: The outputs of the model given the new data points
-        Returns:
-            Scores of the model_out of the new data points
-        """
-
-        # maybe do this
-        # if calibration_set_y != None:
-        #     scores = scores[np.arange(len(scores)), calibration_set_y]
-        model_out[:, 0] -= self.q
-        model_out[:, -1] += self.q
-        return 
 
     def predict(self, X):
         """
@@ -219,6 +202,5 @@ class CP_regression(Conformal):
             An interval or set of confidence
         """
         y_pred = self.model.predict(X)
-        scores = self.score(y_pred)
 
-        return scores <= self.q
+        return y_pred[:, [0, -1]] + (self.q * np.array([-1, 1]))
