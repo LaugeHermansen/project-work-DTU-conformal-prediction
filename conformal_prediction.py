@@ -1,4 +1,4 @@
-from audioop import reverse
+#from audioop import reverse
 import numpy as np
 
 class Conformal():
@@ -70,11 +70,14 @@ class Conformal():
         Returns:
             Nothing. Sets self.q as the estimated 1-alpha quantile of the true distribution of scores
         """
+        self.calibration_set_x = calibration_set_x
+        self.calibration_set_y = calibration_set_y
+
         scores = self.score_distribution(calibration_set_x, calibration_set_y)
         self.q = self._quantile(scores, self.alpha)
 
     def __call__(self,X):
-       return self.predict(self,X)
+       return self.predict(X)
 
 
 class CP_softmax(Conformal):
@@ -204,3 +207,40 @@ class CP_regression(Conformal):
         y_pred = self.model.predict(X)
 
         return y_pred[:, [0, -1]] + (self.q * np.array([-1, 1]))
+
+class CP_regression_adaptive(Conformal):
+    def __init__(self, kernel, model, calibration_set_x, calibration_set_y, alpha):
+        self.kernel = kernel
+        super().__init__(model, calibration_set_x, calibration_set_y, alpha)
+
+    def score_distribution(self, calibration_set_x, calibration_set_y):
+        preds = self.model(calibration_set_x)
+        scores = (calibration_set_y - preds)**2
+        return scores
+    
+    def _quantile(self, scores, alpha):
+        n = len(scores)
+        weights = lambda X: self.kernel(self.calibration_set_x, X, )
+        return lambda X: self._weighted_percentile(scores, weights(X), alpha)
+
+    def _weighted_percentile(self, scores, weights, alpha):
+        ix = np.argsort(scores)
+        scores = scores[ix] # sort data
+        quantiles = []
+        for weights_ in weights:
+            weights_ = weights_[ix] # sort weights
+            weights_cum_sum = np.cumsum(weights_)
+            cdf = weights_cum_sum/weights_cum_sum[-1]
+            for score, prob in zip(scores,cdf):
+                if prob >= 1-alpha:
+                    quantiles.append(score)
+                    break
+        return np.array(quantiles)
+    
+    def predict(self, X):
+        y_pred = self.model.predict(X)[:,None]
+        sqrt_q = np.sqrt(self.q(X))[:,None]
+        return y_pred + sqrt_q*[-1,1]
+
+
+
