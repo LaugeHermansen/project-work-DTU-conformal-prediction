@@ -63,11 +63,11 @@ def test_dumber_model(X,y,x_grid,alpha, kernel):
 
     preds = CP_model(x_grid)
     plt.plot(x_grid, model.predict(x_grid))
-    plt.plot(x_grid, preds[:, 0], ".")
-    plt.plot(x_grid, preds[:, -1], ".")
+    plt.plot(x_grid, preds[:, 0], "-o", markersize=2)
+    plt.plot(x_grid, preds[:, -1], "-o", markersize=2)
     # plt.plot(x_grid, q)
 
-    plt.legend(["cpL", "cpU"])
+    plt.legend(["model", "cpL", "cpU"])
     plt.grid()
 
     plt.plot(X, y, '.')
