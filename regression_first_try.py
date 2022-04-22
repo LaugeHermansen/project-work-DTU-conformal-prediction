@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch import quantile
 import conformal_prediction as CP 
+from scipy.stats import norm
 
 class dumb_model: 
     def __init__(self, X_train, y_train, quantiles=[0.05/2, 1-0.05/2]):
@@ -61,10 +62,13 @@ def test_dumber_model(X,y,x_grid,alpha, kernel):
     CP_model = CP.CP_regression_adaptive(kernel, model, X, y, alpha)
 
     preds = CP_model(x_grid)
-    plt.plot(x_grid, preds[:, 0])
-    plt.plot(x_grid, preds[:, -1])
+    plt.plot(x_grid, model.predict(x_grid))
+    plt.plot(x_grid, preds[:, 0], ".")
+    plt.plot(x_grid, preds[:, -1], ".")
+    # plt.plot(x_grid, q)
 
     plt.legend(["cpL", "cpU"])
+    plt.grid()
 
     plt.plot(X, y, '.')
 
@@ -77,30 +81,33 @@ def test_dumber_model(X,y,x_grid,alpha, kernel):
 def ramp(X, middles, width):
     ret = []
     for middle in middles:
-        ret.append(np.max(np.hstack((width - np.abs(X-middle),np.zeros((len(X),1)))), axis = 1))
+        ret.append(np.max(np.hstack((width - np.abs(X-middle), np.zeros((len(X), 1)))), axis = 1))
     assert np.array(ret).shape == (len(middles), len(X))
     return np.array(ret)
 
+def gauss(X, means, variance):
+    return np.array([norm.pdf(X, loc=mean, scale=variance) for mean in means])
 
-
-alpha = 0.05
+alpha = 0.20
 quantiles = [alpha/2, 0.5, 1-alpha/2]
 n_features = 1
 n_informative = 1
 n_targets = 1
 noise = 6
 
-X, y = make_regression(n_samples=10000, n_features=n_features, n_informative=n_informative, n_targets=n_targets, noise=noise)
-y = y*np.sin(X[:, 0]/3) + y
+X, y = make_regression(n_samples=1000, n_features=n_features, n_informative=n_informative, n_targets=n_targets, noise=noise,random_state=1234)
+y = y*np.sin(X[:, 0]) + y
+y = y - 100 *(y >= 50)
 y_2 = y + 10
 
-x_grid = np.linspace(np.min(X), np.max(X)).reshape((-1, 1))
+x_grid = np.linspace(np.min(X), np.max(X), num=300).reshape((-1, 1))
 
 
-kernel = lambda a,b: ramp(a,b,1)
+kernel = lambda a,b: ramp(a,b,1.5)
+kernel = lambda a,b: gauss(a, b, 0.2)
 
 # test_dumb_model(quantiles, X, y, y_2, x_grid)
-test_dumber_model(X, y**2, x_grid, alpha, kernel)
+test_dumber_model(X, y, x_grid, alpha, kernel)
 
 
 # for quantile in quantiles:
