@@ -3,7 +3,7 @@ from sklearn.datasets import make_regression
 import numpy as np
 import matplotlib.pyplot as plt
 from torch import quantile
-import conformal_prediction as CP 
+import conformal_base as CP 
 from scipy.stats import norm
 
 class dumb_model: 
@@ -34,7 +34,7 @@ def coverage(y, lower, upper):
 
 def test_dumb_model(quantiles, X, y, y_2, x_grid):
     model = dumb_model(X, y, quantiles=quantiles)
-    CP_model = CP.CP_regression(model, X, y_2, alpha=0.05)
+    CP_model = CP.CP_regression_base(model, X, y_2, alpha=0.05)
 
     preds = CP_model.predict(x_grid)
     plt.plot(x_grid, preds[:, 0])
