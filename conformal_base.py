@@ -29,14 +29,13 @@ class Conformal():
         """
         raise NotImplementedError()
 
-    def _quantile(self, scores, alpha):
+    def _quantile(self, scores):
         """
         get the empirical 1-alpha quantile of calibration data
 
         Parameters:
         ----------
             - scores: conformal scores for each data point
-            - alpha: significance level of prediction set
 
         Return:
         -------
@@ -46,7 +45,7 @@ class Conformal():
         n = len(scores)
 
         #the level on which we take the quantile of the scores
-        level = np.ceil((n+1)*(1-alpha))/n
+        level = np.ceil((n+1)*(1-self.alpha))/n
 
         return np.quantile(scores, level)
     
@@ -78,7 +77,7 @@ class Conformal():
         self.calibration_set_y = calibration_set_y
 
         scores = self.score_distribution(calibration_set_x, calibration_set_y)
-        self.q = self._quantile(scores, self.alpha)
+        self.q = self._quantile(scores)
 
     def __call__(self,X):
        return self.predict(X)
