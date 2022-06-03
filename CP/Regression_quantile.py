@@ -1,4 +1,4 @@
-from CP.Base import Base
+from Base import Base
 import numpy as np
 
 class Regression_quantile(Base):
