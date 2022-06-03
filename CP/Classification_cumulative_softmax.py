@@ -1,7 +1,8 @@
-from CP.Base import Base
+from .Classification_base import ClassificationBase
+# from .CP_base import Base
 import numpy as np
 
-class Classification_cumulative_softmax(Base):
+class ClassificationCumulativeSoftmax(ClassificationBase):
     def score_distribution(self, calibration_set_x, calibration_set_y):
         """
         Compute the scores of the calibration set.
@@ -45,17 +46,3 @@ class Classification_cumulative_softmax(Base):
         #     scores = scores[np.arange(len(scores)), calibration_set_y]
 
         return scores
-
-    def predict(self, X):
-        """
-        Compute confidence interval for new data points
-        Args:
-            X: The new data points
-        Returns:
-            An interval or set of confidence
-        """
-        y_pred = self.model(X)
-        scores = self.score(y_pred)
-
-        return scores <= self.q
-

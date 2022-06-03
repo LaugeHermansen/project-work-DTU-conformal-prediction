@@ -2,37 +2,25 @@
 import numpy as np 
 import pandas as pd 
 import matplotlib.pyplot as plt
-from sympy import O 
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
 
-#%%
+
+#%% Load and preprocess data (remove "?" and " ?" and one hot encode)
 data = pd.read_csv("adult.data")
-print(data)
-#%%
-#print(data.columns)
-data.groupby("race").feature.hist()
-plt.hist(data["race"])
-plt.show()
 
-#%% I win! 
+# Remove error data samples 
 for i in data.columns:
     data = data.drop(data[(data[i] == "?").to_numpy() | (data[i] == " ?").to_numpy()].index)
 
+# Print the values each sample can take on
+# for i in data.columns:
+#     print(np.unique(data[i]))
 
-for i in data.columns:
-    for j in data[i]: 
-        if j == "?" or j == " ?":
-            print("Torben er dum")
-
-#%%
-for i in data.columns:
-    print(np.unique(data[i]))
-
-# %%
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
-
+# One-hot encode and split into train and test
 one_hots = ['workclass', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country', 'above-50']
 
 data_X = data[['age', 'workclass', 'fnlwgt', 'marital-status', 'occupation', 'relationship', 'race', 'sex',
@@ -45,9 +33,6 @@ enc = OneHotEncoder(handle_unknown='ignore')
 enc.fit(data_X[one_hots])
 encodings = enc.transform(data_X[one_hots])
 
-#%%
-
-
 X = data_X.drop(one_hots, 1).to_numpy()
 X = np.hstack((X, encodings.toarray()))
 
@@ -57,24 +42,41 @@ y[y_predicate] = "9th-12th"
 y_predicate = (y==" 5th-6th") | (y==" 7th-8th")
 y[y_predicate] = "5th-8th"
 
-#%%
-# encs = []
-# for col in one_hots:
-#     encs.append(OneHotEncoder(handle_unknown='ignore'))
-#     encs[-1].fit(data[col])
-#     data[col] = encs[-1].transform(data[col])
+lenc = LabelEncoder()
+lenc.fit(y)
+y = lenc.transform(y)
 
-train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.5, stratify=data["education"])
+train_X, temp_X, train_y, temp_y = train_test_split(X, y, test_size=0.5, stratify=y)
+cal_X, test_X, cal_y, test_y = train_test_split(temp_X, temp_y, test_size=0.5, stratify=temp_y)
 
-
-
-
-
+#%% Train model 
 # model = LogisticRegression(C=4, max_iter=1000, n_jobs=4)
-model = RandomForestClassifier(n_estimators=200, max_depth=16)
+class RFModel(RandomForestClassifier):
+    def __call__(self, X):
+        return self.predict_proba(X)     
+
+model = RFModel(n_estimators=200, max_depth=16)
+# model = AdaBoostClassifier(RandomForestClassifier(n_estimators=50), n_estimators=50, learning_rate=1)
 
 model.fit(train_X, train_y)
+
 print(model.score(train_X, train_y))
 print(model.score(test_X, test_y))
 
+#%% CP with ClassificationSoftmax
+# fit 
+CPmodel = ClassificationSoftmax(model, cal_X, cal_y, 0.05)
+# empirical coverage
+print(CPmodel.evaluate_coverage(test_X, test_y))
+# Hist of prediction set sizes
+plt.hist(np.sum(CPmodel.predict(test_X),axis = 1), bins = 30)
+plt.show()
 
+#%% CP with Classification cumulative soft max 
+# fit 
+CPmodel = ClassificationCumulativeSoftmax(model, cal_X, cal_y, 0.05)
+# empirical coverage
+print(CPmodel.evaluate_coverage(test_X, test_y))
+# Hist of prediction set sizes
+plt.hist(np.sum(CPmodel.predict(test_X),axis = 1), bins = 30)
+plt.show()

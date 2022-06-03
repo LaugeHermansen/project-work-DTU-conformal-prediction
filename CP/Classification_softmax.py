@@ -1,8 +1,9 @@
-from CP.Base import Base
+from .Classification_base import ClassificationBase
+# from .CP_base import Base
 import numpy as np
 
 
-class Classification_softmax(Base):
+class ClassificationSoftmax(ClassificationBase):
     def score_distribution(self, calibration_set_x, calibration_set_y):
         """
         Compute the scores of the calibration set.
@@ -28,20 +29,6 @@ class Classification_softmax(Base):
             Scores of the model_out of the new data points
         """
         return -model_out
-
-    def predict(self, X):
-        """
-        Compute confidence interval for new data points
-        Args:
-            X: The new data points
-        Returns:
-            boolean array NxM where (i,j) = True means that yj in Tau(Xi).
-        """
-        y_pred = self.model(X)
-        scores = self.score(y_pred)
-
-        return scores <= self.q
-
 
 
 

@@ -78,6 +78,19 @@ class Base():
 
         scores = self.score_distribution(calibration_set_x, calibration_set_y)
         self.q = self._quantile(scores)
+    
+    def evaluate_coverage(self, X, y):
+        """
+        Evaluate the empirical coverage of the test data points.
+        
+        Args:
+            X: the features of the test data points
+            y: the true labels/values of the test data points
+        
+        Returns:
+            The empirical coverage of the test data points
+        """
+        raise NotImplementedError()
 
     def __call__(self,X):
        return self.predict(X)

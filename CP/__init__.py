@@ -1,5 +1,7 @@
-from os.path import dirname, basename, isfile, join
-import glob
-
-modules = glob.glob(join(dirname(__file__), "*.py"))
-__all__ = [ basename(f)[:-3] for f in modules if isfile(f) and not f.endswith('__init__.py')]
+from .Classification_base import ClassificationBase
+from .Classification_cumulative_softmax import ClassificationCumulativeSoftmax
+from .Classification_softmax import ClassificationSoftmax
+from .CP_base import Base
+from .Regression_adaptive_base import RegressionAdaptiveBase
+from .Regression_adaptive_squared_error import RegressionAdaptiveSquaredError
+from .Regression_quantile import RegressionQuantile

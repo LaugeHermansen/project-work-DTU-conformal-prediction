@@ -1,8 +1,8 @@
-from CP.Base import Base
+from .CP_base import Base
 import numpy as np
 from tqdm import tqdm
 
-class Regression_adaptive_base(Base):
+class RegressionAdaptiveBase(Base):
 
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha, kernel, verbose = False):
         self.kernel = kernel

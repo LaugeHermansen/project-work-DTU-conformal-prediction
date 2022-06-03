@@ -1,7 +1,7 @@
-from CP.Base import Base
+from .CP_base import Base
 import numpy as np
 
-class Regression_quantile(Base):
+class RegressionQuantile(Base):
     def score_distribution(self, calibration_set_x, calibration_set_y):
         """
         Compute the scores of the calibration set.

@@ -1,8 +1,8 @@
-from Regression_adaptive_base import CP_regression_adaptive_base
+from .Regression_adaptive_base import RegressionAdaptiveBase
 import numpy as np
 
 
-class Regression_adaptive_squared_error(CP_regression_adaptive_base):
+class RegressionAdaptiveSquaredError(RegressionAdaptiveBase):
 
     def score_distribution(self, calibration_set_x, calibration_set_y):
         preds = self.model(calibration_set_x)
