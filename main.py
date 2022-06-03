@@ -1,5 +1,5 @@
 #form conformal_prediction import CP_softmax
-import CP_base
+from CP import Classification_cumulative_softmax
 import torch
 import torch.nn
 from model import CNN_class
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     accuracies = []
     for (x_cal,y_cal) in tqdm(calibration_dl):
-        CP_model = CP_base.CP_classification_cumulative_softmax(model=model1,
+        CP_model = Classification_cumulative_softmax(model=model1,
                                                               calibration_set_x=x_cal,
                                                               calibration_set_y=y_cal.detach().numpy(),
                                                               alpha=0.05)
