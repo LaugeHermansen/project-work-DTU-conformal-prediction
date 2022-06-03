@@ -1,8 +1,8 @@
-from CP_regression_adaptive_base import CP_regression_adaptive_base
+from Regression_adaptive_base import CP_regression_adaptive_base
 import numpy as np
 
 
-class CP_regression_adaptive_squared_error(CP_regression_adaptive_base):
+class Regression_adaptive_squared_error(CP_regression_adaptive_base):
 
     def score_distribution(self, calibration_set_x, calibration_set_y):
         preds = self.model(calibration_set_x)
@@ -11,5 +11,5 @@ class CP_regression_adaptive_squared_error(CP_regression_adaptive_base):
     
     def predict(self, X):
         y_pred = self.model.predict(X)[:,None]
-        sqrt_q = np.sqrt(self.q[0](X))[:,None]
+        sqrt_q = np.sqrt(self.q(X))[:,None]
         return y_pred + sqrt_q*[-1,1]
