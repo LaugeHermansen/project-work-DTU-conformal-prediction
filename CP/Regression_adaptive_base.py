@@ -1,8 +1,8 @@
-from conformal_base import Conformal
+from CP.Base import Base
 import numpy as np
 from tqdm import tqdm
 
-class CP_regression_adaptive_base(Conformal):
+class Regression_adaptive_base(Base):
 
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha, kernel, verbose = False):
         self.kernel = kernel
@@ -10,22 +10,22 @@ class CP_regression_adaptive_base(Conformal):
         super().__init__(model, calibration_set_x, calibration_set_y, alpha)
 
 
-    def calibrate(self, calibration_set_x, calibration_set_y):
-        """
-        Computes the calibration quantile 
-        Args:
-            calibration_set_x: Calibration set inputs 
-            calibration_set_y: The true labels/values of the calibration set
+    # def calibrate(self, calibration_set_x, calibration_set_y):
+    #     """
+    #     Computes the calibration quantile 
+    #     Args:
+    #         calibration_set_x: Calibration set inputs 
+    #         calibration_set_y: The true labels/values of the calibration set
 
-        Returns:
-            Nothing. Sets self.q as the estimated 1-alpha quantile of the true distribution of scores
-            only here, q is a function of X, the validation points.
-        """
-        self.calibration_set_x = calibration_set_x
-        self.calibration_set_y = calibration_set_y
+    #     Returns:
+    #         Nothing. Sets self.q as the estimated 1-alpha quantile of the true distribution of scores
+    #         only here, q is a function of X, the validation points.
+    #     """
+    #     self.calibration_set_x = calibration_set_x
+    #     self.calibration_set_y = calibration_set_y
 
-        scores = self.score_distribution(calibration_set_x, calibration_set_y)
-        self.q = self._quantile(scores)
+    #     scores = self.score_distribution(calibration_set_x, calibration_set_y)
+    #     self.q = self._quantile(scores)
 
     
     def _quantile(self, scores):
@@ -68,18 +68,7 @@ class CP_regression_adaptive_base(Conformal):
             cdf = weights_cum_sum/weights_cum_sum[-1]
             quantiles.append(scores[binary_search(cdf)])
 
+            #quantiles[i] = weighted 1-alpha quantile in Xi, Xi is the i'th datapoint in validation set
+
         return np.array(quantiles)
-    
-
-class CP_regression_adaptive_squared_error(CP_regression_adaptive_base):
-
-    def score_distribution(self, calibration_set_x, calibration_set_y):
-        preds = self.model(calibration_set_x)
-        scores = (calibration_set_y - preds)**2
-        return scores
-    
-    def predict(self, X):
-        y_pred = self.model.predict(X)[:,None]
-        sqrt_q = np.sqrt(self.q[0](X))[:,None]
-        return y_pred + sqrt_q*[-1,1]
 

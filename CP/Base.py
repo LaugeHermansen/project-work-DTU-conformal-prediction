@@ -1,6 +1,6 @@
 import numpy as np
 
-class Conformal():
+class Base():
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha):
         self.model = model
         self.alpha = alpha

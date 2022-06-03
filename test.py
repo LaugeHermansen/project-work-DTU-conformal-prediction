@@ -3,7 +3,6 @@ import numpy as np
 def binary_search(cdf, alpha, i=0, j=None):
     j = len(cdf) if j == None else j
     m = int((i+j)/2)
-    # print(i,m,j)
     if i == j:  return i
     if cdf[m] < alpha:   return binary_search(cdf, alpha, m+1, j)
     elif cdf[m] > alpha: return binary_search(cdf, alpha, i, m)

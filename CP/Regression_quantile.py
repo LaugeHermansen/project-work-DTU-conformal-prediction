@@ -1,8 +1,7 @@
-from conformal_base import Conformal
+from CP.Base import Base
 import numpy as np
 
-
-class CP_regression_quantile(Conformal):
+class Regression_quantile(Base):
     def score_distribution(self, calibration_set_x, calibration_set_y):
         """
         Compute the scores of the calibration set.
