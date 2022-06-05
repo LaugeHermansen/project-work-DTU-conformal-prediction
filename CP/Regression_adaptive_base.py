@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 class RegressionAdaptiveBase(Base):
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, kernel, verbose = False):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, kernel = None, verbose = False):
         """
         instantiate class
 
@@ -13,11 +13,16 @@ class RegressionAdaptiveBase(Base):
             kernel: the kernel function. Must be made such that
             it can take in the calibration_set_x (N_cal x M) 
             data matrix and the test_set_x (N_test x M) matrix 
-            and then return the weights in an (M_test x M_cal) 
-            matrix
+            and then return a generator of the weights for each 
+            sample
             
             verbose: whether to print progress bar or not
+
+            adaptive: bool whether to make the regression adaptive or not
         """
+
+        
+        self.adaptive = kernel != None
         self.kernel = kernel
         self.verbose = verbose
         super().__init__(model, calibration_set_x, calibration_set_y, alpha)
@@ -35,8 +40,11 @@ class RegressionAdaptiveBase(Base):
         --------
             q: a function of the test points, X
         """
-        n = len(scores)
-        return lambda X: self._weighted_quantile(scores, X)
+        if self.adaptive:
+            return lambda X: self._weighted_quantile(scores, X)
+        else:
+            q = super()._quantile(scores)
+            return lambda X: np.ones(len(X))*q
     
     def _weighted_quantile(self, calibration_scores, X):
         """
@@ -82,3 +90,22 @@ class RegressionAdaptiveBase(Base):
             quantiles.append(sorted_scores[binary_search(cdf)])
 
         return np.array(quantiles)
+    
+    def evaluate_coverage(self, X, y):
+        """
+        Evaluate epirical coverage on test data points.
+        
+        Args:
+        ------
+            X: the features of the test data points
+            y: the true labels/values of the test data points
+        
+        Returns:
+        --------
+            The empirical coverage of the test data points
+            The prediction
+        """
+        y_preds, pred_intervals = self.predict(X)
+        in_pred_set = np.array(list(map(lambda a: a[1][0] <= a[0] <= a[1][1], zip(y, pred_intervals))))
+        empirical_coverage = np.mean(in_pred_set)
+        return y_preds.squeeze(), pred_intervals, in_pred_set, empirical_coverage

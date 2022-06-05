@@ -1,7 +1,7 @@
-from .CP_base import Base
+from .Regression_adaptive_base import RegressionAdaptiveBase
 import numpy as np
 
-class RegressionQuantile(Base):
+class RegressionQuantile(RegressionAdaptiveBase):
     def score_distribution(self, calibration_set_x, calibration_set_y):
         """
         Compute the scores of the calibration set.
@@ -33,6 +33,6 @@ class RegressionQuantile(Base):
             y_pred: the outputs of the regressor
             pred_interval: the prediction intervals (N_test x 2) matrix
         """
-        y_pred = self.model.predict(X)
+        y_pred = self.model(X)
 
         return y_pred, y_pred[:, [0, -1]] + (self.q * np.array([-1, 1]))

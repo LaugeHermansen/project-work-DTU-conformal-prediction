@@ -1,4 +1,3 @@
-from sklearn.covariance import empirical_covariance
 from .CP_base import Base
 import numpy as np
 

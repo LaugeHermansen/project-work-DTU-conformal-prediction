@@ -16,6 +16,8 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
             pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j in Tau(X_i)
         """
         scores = self.score(X)
+        return scores <= self.q
+
         scores_idx = np.argsort(scores, axis = 1)
         pred_set = np.zeros_like(scores).astype(bool)
         for i in range(len(scores)):

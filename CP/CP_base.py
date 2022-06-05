@@ -1,11 +1,23 @@
 import numpy as np
 
 class Base():
+
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha):
+
+        if not hasattr(model, "__call__"):
+            for function_name in ['predict_proba', 'predict']:
+                if hasattr(model, function_name):
+                    call_function_found = True
+                    model.__class__.__call__ = getattr(model, function_name)
+                    print(f"Model {model.__class__.__name__} has no __call__ method - {model.__class__.__name__}.{function_name} was used instead")
+                    break
+            if not call_function_found:
+                raise ValueError(f"Model must have __call__ method")
+
         self.model = model
         self.alpha = alpha
         self.calibrate(calibration_set_x, calibration_set_y)
-        
+
     def score_distribution(self):
         """
         Compute the scores of the calibration set.
@@ -85,7 +97,7 @@ class Base():
         scores = self.score_distribution()
         self.q = self._quantile(scores)
     
-    def evaluate(self, X, y):
+    def evaluate_coverage(self, X, y):
         """
         Evaluate the empirical coverage of the test data points.
         
