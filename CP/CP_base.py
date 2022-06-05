@@ -11,11 +11,10 @@ class Base():
         Compute the scores of the calibration set.
 
         Args:
-            calibration_set_x: the features of the calibration set
-            calibration_set_y: the true labels/values of the calibration set
+            Takes nothing as the calibration set is in the init
 
         Returns:
-            All calibration scores of the correct label
+            All scores of the labels of the calibration set
         """
         raise NotImplementedError()
 

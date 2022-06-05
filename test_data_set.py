@@ -6,12 +6,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from torch import multinomial
 from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
 
 
 #%% Load and preprocess data (remove "?" and " ?" and one hot encode)
 #set column names
-columns = [ 'age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'above-50']
+columns = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country', 'above-50']
 one_hots = ['workclass', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country', 'above-50']
 label = "education"
 
@@ -20,6 +21,10 @@ data = pd.read_csv("data/adult.data", names = columns).applymap(lambda x: x.stri
 #remove missing values
 data = data.applymap(lambda x: np.nan if x == "?" else x).dropna(axis = 0)
 
+#%%
+
+for c in columns:
+    print(" ?" in data[c])
 
 #%%
 # One-hot encode and split into train and test
@@ -37,10 +42,10 @@ X = np.hstack((X, encodings.toarray()))
 
 #Label encode y
 y = data_y.to_numpy().squeeze()
-y_predicate = (y=="9th") | (y=="10th") | (y=="11th") | (y=="12th")
-y[y_predicate] = "9th-12th"
-y_predicate = (y=="5th-6th") | (y=="7th-8th")
-y[y_predicate] = "5th-8th"
+# y_predicate = (y=="9th") | (y=="10th") | (y=="11th") | (y=="12th")
+# y[y_predicate] = "9th-12th"
+# y_predicate = (y=="5th-6th") | (y=="7th-8th")
+# y[y_predicate] = "5th-8th"
 
 lenc = LabelEncoder()
 lenc.fit(y)
@@ -56,7 +61,7 @@ class RFModel(RandomForestClassifier):
     def __call__(self, X):
         return self.predict_proba(X)     
 
-model = RFModel(n_estimators=200, max_depth=16, n_jobs = 4)
+model = RFModel(n_estimators=100, n_jobs = 6)#, max_depth=50)
 # model = AdaBoostClassifier(RandomForestClassifier(n_estimators=50), n_estimators=50, learning_rate=1)
 
 model.fit(train_X, train_y)
