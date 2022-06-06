@@ -1,31 +1,52 @@
 import numpy as np
 
 class Base():
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha):
+
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None):
+
+        if call_function_name != None:
+            model.__class__.__call__ = getattr(model, call_function_name)
+        elif hasattr(model, "__call__"): pass
+        else: raise ValueError("couldn't resolve call function")
+
+        # if not hasattr(model, "__call__") and call_function_name == None:
+        #     for function_name in ['predict_proba', 'predict']:
+        #         if hasattr(model, function_name):
+        #             call_function_found = True
+        #             print(f"Model {model.__class__.__name__} has no __call__ method - {model.__class__.__name__}.{function_name} was used instead")
+        #             break
+        #     if not call_function_found:
+        #         raise ValueError(f"Model must have __call__ method")
+
         self.model = model
         self.alpha = alpha
         self.calibrate(calibration_set_x, calibration_set_y)
-        
-    def score_distribution(self, calibration_set_x, calibration_set_y):
+
+    def score_distribution(self):
         """
         Compute the scores of the calibration set.
 
         Args:
-            calibration_set_x: the features of the calibration set
-            calibration_set_y: the true labels/values of the calibration set
+        -----
+            Takes nothing as the calibration set is in the init
 
         Returns:
-            All calibration scores of the correct label
+        -------
+            All scores of the labels of the calibration set
         """
         raise NotImplementedError()
 
-    def score(self, outputs):
+    def score(self, X):
         """
         Compute score of new data
+
         Args:
-            outputs: The outputs of the model given the new data points
+        -----
+            X: test inputs NxM matrix
+
         Returns:
-            Scores of the outputs of the new data points
+        -------
+            Scores of X and all labels in label space.
         """
         raise NotImplementedError()
 
@@ -33,7 +54,7 @@ class Base():
         """
         get the empirical 1-alpha quantile of calibration data
 
-        Parameters:
+        Args:
         ----------
             - scores: conformal scores for each data point
 
@@ -53,30 +74,32 @@ class Base():
     def predict(self, X):
         """
         Compute confidence interval for new data points
+
         Args:
+        -----
             X: The new data points
             
         Returns:
+        --------
+            model prediction
             An interval or set of confidence
         """
         raise NotImplementedError()
 
     def calibrate(self, calibration_set_x, calibration_set_y):
         """
-        Computes the calibration quantile 
+        Computes the calibration quantile, q_hat, and sets calibration set
+
         Args:
+        -----
             calibration_set_x: Calibration set inputs 
             calibration_set_y: The true labels/values of the calibration set
-
-        Returns:
-            Nothing.
-            Sets self.q as the estimated 1-alpha quantile of the true distribution of scores
-            sets calibration set
         """
         self.calibration_set_x = calibration_set_x
         self.calibration_set_y = calibration_set_y
+        self.n_cal = len(calibration_set_x)
 
-        scores = self.score_distribution(calibration_set_x, calibration_set_y)
+        scores = self.score_distribution()
         self.q = self._quantile(scores)
     
     def evaluate_coverage(self, X, y):
@@ -84,10 +107,12 @@ class Base():
         Evaluate the empirical coverage of the test data points.
         
         Args:
+        -----
             X: the features of the test data points
             y: the true labels/values of the test data points
         
         Returns:
+        ---------
             The empirical coverage of the test data points
         """
         raise NotImplementedError()

@@ -4,31 +4,53 @@ import numpy as np
 
 
 class ClassificationSoftmax(ClassificationBase):
-    def score_distribution(self, calibration_set_x, calibration_set_y):
+    def score_distribution(self):
         """
         Compute the scores of the calibration set.
-        
+
         Args:
-            calibration_set_x: the features of the calibration set
-            calibration_set_y: the true labels/values of the calibration set
+        -----
+            Takes nothing as the calibration set is in the init
 
         Returns:
+        -------
             All scores of the labels of the calibration set
         """
-        all_scores = -self.model(calibration_set_x)
-        true_scores = all_scores[np.arange(len(calibration_set_y)), calibration_set_y] 
+        all_scores = -self.model(self.calibration_set_x)
+        true_scores = all_scores[np.arange(self.n_cal), self.calibration_set_y] 
         # As all_scores is a (N x Classes) we need to index each datapoint seperatly.
         return true_scores
 
-    def score(self, model_out):
+    def score(self, X):
         """
         Compute score of new data
+
         Args:
-            model_out: The outputs of the model given the new data points
+        -----
+            X: test inputs NxM matrix
+
         Returns:
-            Scores of the model_out of the new data points
+        -------
+            Scores of X and all labels in label space.
         """
-        return -model_out
+        return -self.model(X)
+    
+    def predict(self, X):
+        """
+        compute prediction set
+        
+        Args:
+        -----
+            X: NxM matrix with test points
+        
+        Returns:
+        --------
+            pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j \in Tau(X_i)
+        """
+        scores = self.score(X)
+        return scores <= self.q
+
+
 
 
 
