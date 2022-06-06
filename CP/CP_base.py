@@ -81,6 +81,7 @@ class Base():
             
         Returns:
         --------
+            model prediction
             An interval or set of confidence
         """
         raise NotImplementedError()

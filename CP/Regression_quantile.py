@@ -2,7 +2,7 @@ from .Regression_adaptive_base import RegressionAdaptiveBase
 import numpy as np
 
 class RegressionQuantile(RegressionAdaptiveBase):
-    def score_distribution(self, calibration_set_x, calibration_set_y):
+    def score_distribution(self):
         """
         Compute the scores of the calibration set.
 
@@ -15,8 +15,8 @@ class RegressionQuantile(RegressionAdaptiveBase):
             All scores of the labels of the calibration set
         """
 
-        preds = self.model(calibration_set_x)
-        scores = np.max([preds[:, 0] - calibration_set_y, calibration_set_y - preds[:, -1]], axis=0)
+        preds = self.model(self.calibration_set_x)
+        scores = np.max([preds[:, 0] - self.calibration_set_y, self.calibration_set_y - preds[:, -1]], axis=0)
         
         return scores
 
@@ -35,4 +35,4 @@ class RegressionQuantile(RegressionAdaptiveBase):
         """
         y_pred = self.model(X)
 
-        return y_pred, y_pred[:, [0, -1]] + (self.q * np.array([-1, 1]))
+        return y_pred, y_pred[:, [0, -1]] + (self.q(X) * np.array([-1, 1]))

@@ -1,0 +1,74 @@
+
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import Matern
+from scipy.stats import norm
+import numpy as np
+
+from CP import Base
+from CP import RegressionAdaptiveBase
+
+
+class GaussianProcessModelWrapper(Base):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None):
+        """
+        Model and call_function_name are not used in this class.
+        """
+        model = GaussianProcessRegressor(Matern(length_scale=0.05, length_scale_bounds="fixed", nu=3), alpha=50, n_restarts_optimizer=0)
+        
+        super().__init__(
+            model, 
+            calibration_set_x, 
+            calibration_set_y, 
+            alpha, 
+            "predict"
+        )
+
+
+    def predict(self, X):
+        """
+        Compute confidence interval for new data points
+
+        Args:
+        -----
+            X: The new data points
+            
+        Returns:
+        --------
+            Prediction, and an interval or set of confidence
+        """
+        y_mean, y_std = self.model.predict(X, return_std=True)
+        pred_interval = y_mean[:, None] + np.array([-1, 1]) * y_std[:,None] * norm.ppf(q = 1-self.alpha)
+        return y_mean, pred_interval
+        
+        
+
+    def calibrate(self, calibration_set_x, calibration_set_y):
+        """
+        Computes the calibration quantile, q_hat, and sets calibration set
+
+        Args:
+        -----
+            calibration_set_x: Calibration set inputs 
+            calibration_set_y: The true labels/values of the calibration set
+        """
+        self.calibration_set_x = calibration_set_x
+        self.calibration_set_y = calibration_set_y
+        self.n_cal = len(calibration_set_x)
+
+        self.model.fit(calibration_set_x, calibration_set_y)
+
+    def evaluate_coverage(self, X, y):
+        """
+        Evaluate the empirical coverage of the test data points.
+        
+        Args:
+        -----
+            X: the features of the test data points
+            y: the true labels/values of the test data points
+        
+        Returns:
+        ---------
+            The empirical coverage of the test data points
+        """
+        return RegressionAdaptiveBase.evaluate_coverage(self, X, y)
+
