@@ -1,5 +1,6 @@
 from .Regression_adaptive_base import RegressionAdaptiveBase
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class RegressionAdaptiveSquaredError(RegressionAdaptiveBase):

@@ -35,4 +35,8 @@ class RegressionQuantile(RegressionAdaptiveBase):
         """
         y_pred = self.model(X)
 
-        return y_pred, y_pred[:, [0, -1]] + (self.q(X) * np.array([-1, 1]))
+        # AAAAARGHHH the predict function should output point estimate as well
+        # but it doesn't, so I just made it the mean of the two quantiles
+        # - Lauge
+
+        return np.mean(y_pred, axis = 1), y_pred[:, [0, -1]] + (self.q(X)[:,None] * np.array([-1, 1]))

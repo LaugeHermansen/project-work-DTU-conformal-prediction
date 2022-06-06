@@ -2,7 +2,7 @@ import numpy as np
 
 class Base():
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, name = None):
 
         if call_function_name != None:
             model.__class__.__call__ = getattr(model, call_function_name)
@@ -20,7 +20,10 @@ class Base():
 
         self.model = model
         self.alpha = alpha
+        self.name = name if name != None else self.__class__.__name__
         self.calibrate(calibration_set_x, calibration_set_y)
+    
+
 
     def score_distribution(self):
         """

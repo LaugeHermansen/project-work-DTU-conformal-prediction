@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 class RegressionAdaptiveBase(Base):
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, kernel = None, verbose = False):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, name = None, kernel = None, verbose = False):
         """
         instantiate class
 
@@ -25,7 +25,10 @@ class RegressionAdaptiveBase(Base):
         self.adaptive = kernel != None
         self.kernel = kernel
         self.verbose = verbose
-        super().__init__(model, calibration_set_x, calibration_set_y, alpha, call_function_name)
+        if   name == None and kernel == None: name = self.__class__.__name__.replace("Adaptive", "").replace("adaptive", "")
+        elif name == None and kernel != None: name = f"{self.__class__.__name__}, kernel: {self.kernel.__name__}"
+
+        super().__init__(model, calibration_set_x, calibration_set_y, alpha, call_function_name, name)
     
     def _quantile(self, scores):
         """
@@ -76,9 +79,10 @@ class RegressionAdaptiveBase(Base):
         #sort scores, and init quantiles list
         ix = np.argsort(calibration_scores)
         sorted_scores = calibration_scores[ix]
-        n_test = len(sorted_scores)
+        n_test = len(X)
         quantiles = []
     
+        if self.verbose:  print(f"Fitting adaptive quantiles - {self.name}")
         if self.verbose:  iterable = tqdm(self.kernel(self.calibration_set_x, X), total = n_test)
         else:             iterable = iter(self.kernel(self.calibration_set_x, X))
         
@@ -86,7 +90,8 @@ class RegressionAdaptiveBase(Base):
         for weights in iterable:
             weights = weights[ix]
             weights_cum_sum = np.cumsum(weights)
-            cdf = weights_cum_sum/weights_cum_sum[-1]
+            if weights_cum_sum[-1] == 0:  cdf = np.arange(1,1+self.n_cal)/self.n_cal
+            else:                         cdf = weights_cum_sum/weights_cum_sum[-1]
             quantiles.append(sorted_scores[binary_search(cdf)])
 
         return np.array(quantiles)

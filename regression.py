@@ -35,13 +35,12 @@ for c in data.columns:
 
 X = data[data.columns[1:]].to_numpy()
 
-X = np.hstack((X, X**2, X**3, X**4, X**5, X**6, X**7))
-
 y = data[data.columns[0]].to_numpy().squeeze()
 
 st = StandardScaler()
-st.fit(X)
-X_standard = st.transform(X)
+X_OG_standard = st.fit_transform(X)
+X_standard = np.hstack((X_OG_standard, X_OG_standard**2))#, X_OG_standard**3, X_OG_standard**4))
+X_standard = st.fit_transform(X_standard)
 
 
 #%%
@@ -63,7 +62,7 @@ plt.show()
 
 # split dataset
 
-train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.05, 0.45, 0.5), X_standard,y,stratify, keep_frac = 0.3)
+train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.1)
 
 
 # train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
@@ -77,7 +76,7 @@ pca.fit(X_standard)
 
 X_pca = pca.transform(X_standard)
 
-plt.scatter(X_pca[::-1,0],X_pca[::-1,1],edgecolors='none',s=3, alpha = 0.1,c=y[::-1])
+plt.scatter(X_pca[:,0],X_pca[:,1],edgecolors='none',s=3, alpha = 0.1,c=y)
 plt.colorbar()
 plt.title('y on first two PCs')
 plt.show()
@@ -124,8 +123,8 @@ cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 # cp_models = [cplm_ad, cplm_st, cpgp_ad, cpgp_st, gp_model]
 cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_st, cpqr_st]
 
-Result = namedtuple("Result", ["y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage"])
-cp_results = [Result(*cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
+Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage"])
+cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
 
 
 
@@ -134,10 +133,10 @@ cp_results = [Result(*cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
 
 test_X_pca = pca.transform(test_X)
 
-plt.rcParams["figure.figsize"] = (20, 20)
+plt.rcParams["figure.figsize"] = (10, 10)
 
 for result in cp_results:
-    print(result.empirical_coverage)
+    print("coverage:", result.empirical_coverage)
     
     
     y_pred_interval_sizes = result.y_pred_intervals[:,1] - result.y_pred_intervals[:,0]
@@ -167,7 +166,7 @@ for result in cp_results:
 
 
     ax3 = plt.subplot2grid((2,2), (0, 1), rowspan=2)
-    ax3.scatter(
+    plt.scatter(
         test_X_pca[:,0],
         test_X_pca[:,1],
         edgecolors='none',
@@ -175,11 +174,12 @@ for result in cp_results:
         alpha = alpha,
         c=y_pred_interval_sizes
     )
-    # ax3.colorbar()
+    plt.colorbar()
     ax3.set_title('pred set sizes on first two PCs')
     ax3.set_xlabel("PC 1")
     ax3.set_ylabel("PC 2")
     ax3.plot()
+    plt.suptitle(result.cp_model.name, fontsize = 15)
     plt.tight_layout()
     plt.show()
     
@@ -212,21 +212,21 @@ for result in cp_results:
 
 # Plot the coverage based on class (y-intervals)
 
-bar = []
-height_ad = []
-height_st = []
-for y_class in sorted(set(stratify)):
-    bar.append(y_class)
-    height_ad.append(np.mean(in_pred_set_ad[test_stratify == y_class]))
-    height_st.append(np.mean(in_pred_set_st[test_stratify == y_class]))
+# bar = []
+# height_ad = []
+# height_st = []
+# for y_class in sorted(set(stratify)):
+#     bar.append(y_class)
+#     height_ad.append(np.mean(in_pred_set_ad[test_stratify == y_class]))
+#     height_st.append(np.mean(in_pred_set_st[test_stratify == y_class]))
 
 
-# barplot(bar, (height_ad, height_st), ("adaptive", "static"))
+# # barplot(bar, (height_ad, height_st), ("adaptive", "static"))
 
-plt.plot(bar, height_st, label = "static")
-plt.plot(bar, height_ad, label = "adaptive")
-print(np.std(height_ad))
-print(np.std(height_st))
-plt.legend()
-plt.title("Coverage vs y-intervals")
-plt.show()
+# plt.plot(bar, height_st, label = "static")
+# plt.plot(bar, height_ad, label = "adaptive")
+# print(np.std(height_ad))
+# print(np.std(height_st))
+# plt.legend()
+# plt.title("Coverage vs y-intervals")
+# plt.show()
