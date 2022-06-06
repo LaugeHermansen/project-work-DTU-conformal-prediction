@@ -62,7 +62,7 @@ class ABModel(AdaBoostClassifier):
     def __call__(self, X):
         return self.predict_proba(X)
           
-model = RFModel(n_estimators=100, n_jobs = 6)#, max_depth=50)
+model = RandomForestClassifier(n_estimators=100, n_jobs = 6)#, max_depth=50)
 # model = ABModel(RandomForestClassifier(n_estimators=50, n_jobs = 6), n_estimators=200, learning_rate=1)
 
 model.fit(train_X, train_y)
@@ -119,11 +119,11 @@ labels2, heights2 = zip(*bar2)
 
 
 fig, ax = barplot(lenc.inverse_transform(labels1), (heights1, heights2),#, he4),
-("coverage", "coverage cum"), (14,5))
+("coverage", "coverage adaptive"), (14,5))
 plt.xticks(rotation = 45, fontsize = 20)
 plt.yticks(fontsize = 20)
 plt.xlabel("Classes", fontsize = 23)
 plt.legend(fontsize = 14, loc='center left', bbox_to_anchor=(1,0.5))
-fig.suptitle("Empirical coverage distirbuted over true labels", fontsize = 30)
+fig.suptitle("Empirical coverage distributed over true labels", fontsize = 30)
 fig.tight_layout()
-
+plt.show()
