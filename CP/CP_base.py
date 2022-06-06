@@ -2,17 +2,21 @@ import numpy as np
 
 class Base():
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None):
 
-        if not hasattr(model, "__call__"):
-            for function_name in ['predict_proba', 'predict']:
-                if hasattr(model, function_name):
-                    call_function_found = True
-                    model.__class__.__call__ = getattr(model, function_name)
-                    print(f"Model {model.__class__.__name__} has no __call__ method - {model.__class__.__name__}.{function_name} was used instead")
-                    break
-            if not call_function_found:
-                raise ValueError(f"Model must have __call__ method")
+        if call_function_name != None:
+            model.__class__.__call__ = getattr(model, call_function_name)
+        elif hasattr(model, "__call__"): pass
+        else: raise ValueError("couldn't resolve call function")
+
+        # if not hasattr(model, "__call__") and call_function_name == None:
+        #     for function_name in ['predict_proba', 'predict']:
+        #         if hasattr(model, function_name):
+        #             call_function_found = True
+        #             print(f"Model {model.__class__.__name__} has no __call__ method - {model.__class__.__name__}.{function_name} was used instead")
+        #             break
+        #     if not call_function_found:
+        #         raise ValueError(f"Model must have __call__ method")
 
         self.model = model
         self.alpha = alpha

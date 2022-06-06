@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 class RegressionAdaptiveBase(Base):
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, kernel = None, verbose = False):
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, kernel = None, verbose = False):
         """
         instantiate class
 
@@ -25,7 +25,7 @@ class RegressionAdaptiveBase(Base):
         self.adaptive = kernel != None
         self.kernel = kernel
         self.verbose = verbose
-        super().__init__(model, calibration_set_x, calibration_set_y, alpha)
+        super().__init__(model, calibration_set_x, calibration_set_y, alpha, call_function_name)
     
     def _quantile(self, scores):
         """

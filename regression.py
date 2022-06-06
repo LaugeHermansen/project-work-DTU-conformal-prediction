@@ -83,8 +83,8 @@ def squared_exponential(X1, X2):
 # the standard CP, but if you specify a kernel,
 # it is adaptive
 
-cplm_ad = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, 0.2, kernel = squared_exponential, verbose = True)
-cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, 0.2)
+cplm_ad = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, 0.2, 'predict', kernel = squared_exponential, verbose = True)
+cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, 0.2, 'predict')
 
 y_preds_ad, pred_intervals_ad, in_pred_set_ad, empirical_coverage_ad = cplm_ad.evaluate_coverage(test_X, test_y)
 y_preds_st, pred_intervals_st, in_pred_set_st, empirical_coverage_st = cplm_st.evaluate_coverage(test_X, test_y)
