@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
-from plot_helpers import barplot, compute_barplot_data
+from Toolbox.plot_helpers import barplot, compute_barplot_data
 
 
 #%% Load and preprocess data (remove "?" and " ?" and one hot encode)

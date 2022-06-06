@@ -1,7 +1,6 @@
 from .CP_base import Base
 import numpy as np
 
-
 class ClassificationBase(Base):
 
     def evaluate_coverage(self, X, y):

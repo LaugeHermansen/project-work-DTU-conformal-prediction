@@ -6,18 +6,20 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.gaussian_process.kernels import Matern
+from Models import MultipleQuantileRegressor
 
 from CP import RegressionAdaptiveSquaredError
 from CP.Regression_quantile import RegressionQuantile
-from plot_helpers import barplot
 from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
-from quantile_regressor import MultipleQuantileRegressor
-from kernels import mahalanobis_sqe, squared_exponential
+
+from sklearn.model_selection import train_test_split
+from Toolbox.plot_helpers import barplot
+from Toolbox.kernels import mahalanobis_sqe, squared_exponential
+from Toolbox.tools import multiple_split
 #%%
 
 #Read data
@@ -28,17 +30,21 @@ data = pd.read_csv('data/CASP.csv', header = 0)
 for c in data.columns:
     print(f"{c}: nans: {np.sum(np.isnan(data[c]))}, {list(set(data[c].apply(type)))}, [{min(data[c])}, {max(data[c])}]")
 
+#%%
 #split x and y, and standardize x
 
 X = data[data.columns[1:]].to_numpy()
 
-X = np.hstack((X, X**2, X**3, X**4))
+X = np.hstack((X, X**2, X**3, X**4, X**5, X**6, X**7))
 
 y = data[data.columns[0]].to_numpy().squeeze()
 
 st = StandardScaler()
 st.fit(X)
 X_standard = st.transform(X)
+
+
+#%%
 
 # create pseudo classes, by binning y to be used for stratification
 
@@ -57,8 +63,11 @@ plt.show()
 
 # split dataset
 
-train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
-cal_X, test_X, cal_y, test_y, cal_stratify, test_stratify = train_test_split(temp_X, temp_y, temp_stratify, test_size=0.7, stratify=temp_stratify, shuffle = True)
+train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.05, 0.45, 0.5), X_standard,y,stratify, keep_frac = 0.3)
+
+
+# train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
+# cal_X, test_X, cal_y, test_y, cal_stratify, test_stratify = train_test_split(temp_X, temp_y, temp_stratify, test_size=0.7, stratify=temp_stratify, shuffle = True)
 
 # Run PCA
 
@@ -84,8 +93,11 @@ lm = LinearRegression(n_jobs = 6)
 # lm = RandomForestRegressor(n_estimators = 100, n_jobs = 6)
 lm.fit(train_X, train_y)
 
+#%%
 
 qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 1-alpha/2])
+
+#%%
 
 # I changed the adaptive regression base a bit
 # Now, if you don't specify a kernel, it is just
