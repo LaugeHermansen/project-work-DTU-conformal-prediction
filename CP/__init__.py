@@ -4,4 +4,4 @@ from .Classification_softmax import ClassificationSoftmax
 from .CP_base import Base
 from .Regression_adaptive_base import RegressionAdaptiveBase
 from .Regression_adaptive_squared_error import RegressionAdaptiveSquaredError
-from .Regression_quantile import RegressionQuantile
+from .Regression_adaptive_quantile import RegressionAdaptiveQuantile

@@ -11,8 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.gaussian_process.kernels import Matern
 from Models import MultipleQuantileRegressor
 
-from CP import RegressionAdaptiveSquaredError
-from CP.Regression_quantile import RegressionQuantile
+from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
 from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
 
@@ -62,7 +61,7 @@ plt.show()
 
 # split dataset
 
-train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.8)
+train_X, cal_X, test_X, train_y, cal_y, test_y, train_strat, cal_strat, test_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.3)
 
 
 # train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
@@ -94,7 +93,7 @@ lm.fit(train_X, train_y)
 
 #%%
 
-qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 1-alpha/2])
+qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-alpha/2])
 
 #%%
 
@@ -106,7 +105,9 @@ qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 1-alpha/2
 cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
 cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
 cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
+cpqr_ad_maha = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cpqr_ad_sqe = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
 # Fit a GP model
 # gp_model = GaussianProcessModelWrapper(None, cal_X, cal_y, alpha)
@@ -121,9 +122,9 @@ cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
 # Evaluate
 # cp_models = [cplm_ad, cplm_st, cpgp_ad, cpgp_st, gp_model]
-cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_st, cpqr_st]
+cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
 
-Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage"])
+Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage", "effective_sample_sizes"])
 cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
 
 
@@ -136,9 +137,10 @@ plt.rcParams["figure.figsize"] = (12, 8)
 
 for result in cp_results:
     y_pred_interval_sizes = result.y_pred_intervals[:,1] - result.y_pred_intervals[:,0]
+    print(result.cp_model.name)
     print("coverage:", result.empirical_coverage)
     print("expected prediction interval size:", np.mean(y_pred_interval_sizes))
-    
+    print("mean effective sample size", np.mean(result.effective_sample_sizes))
     
     
     ax1 = plt.subplot2grid((4, 5), (0, 0), rowspan=2, colspan=2)
