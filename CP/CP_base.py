@@ -5,7 +5,7 @@ class Base():
     def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, name = None):
 
         if call_function_name != None:
-            model.__class__.__call__ = getattr(model, call_function_name)
+            model.__class__.__call__ = getattr(model.__class__, call_function_name)
         elif hasattr(model, "__call__"): pass
         else: raise ValueError("couldn't resolve call function")
 

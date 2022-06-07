@@ -17,7 +17,7 @@ from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
 from sklearn.model_selection import train_test_split
 from Toolbox.plot_helpers import barplot
-from Toolbox.kernels import mahalanobis_sqe, squared_exponential
+from Toolbox.kernels import mahalanobis_sqe, squared_exponential, KNN
 from Toolbox.tools import multiple_split
 #%%
 
@@ -103,6 +103,7 @@ qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-al
 # it is adaptive
 
 cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cplm_ad_KNN = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
 cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
 cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
 cpqr_ad_maha = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
@@ -122,7 +123,7 @@ cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
 # Evaluate
 # cp_models = [cplm_ad, cplm_st, cpgp_ad, cpgp_st, gp_model]
-cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
+cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_ad_KNN, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
 
 Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage", "effective_sample_sizes"])
 cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
