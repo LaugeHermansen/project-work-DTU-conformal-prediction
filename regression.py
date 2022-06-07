@@ -62,7 +62,7 @@ plt.show()
 
 # split dataset
 
-train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.1)
+train_X, test_X, cal_X, train_y, test_y, cal_y, train_strat, test_strat, cal_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.8)
 
 
 # train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
@@ -103,8 +103,8 @@ qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 1-alpha/2
 # the standard CP, but if you specify a kernel,
 # it is adaptive
 
-cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe, verbose = True)
-cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential, verbose = True)
+cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
 cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
 cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
@@ -133,15 +133,16 @@ cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_mod
 
 test_X_pca = pca.transform(test_X)
 
-plt.rcParams["figure.figsize"] = (10, 10)
+plt.rcParams["figure.figsize"] = (12, 8)
 
 for result in cp_results:
-    print("coverage:", result.empirical_coverage)
-    
-    
     y_pred_interval_sizes = result.y_pred_intervals[:,1] - result.y_pred_intervals[:,0]
+    print("coverage:", result.empirical_coverage)
+    print("expected prediction interval size:", np.mean(y_pred_interval_sizes))
     
-    ax1 = plt.subplot2grid((2,2), (0, 0))
+    
+    
+    ax1 = plt.subplot2grid((4, 5), (0, 0), rowspan=2, colspan=2)
     ax1.plot(
         test_y, 
         y_pred_interval_sizes, 
@@ -153,7 +154,7 @@ for result in cp_results:
     ax1.set_ylabel(r"Prediction set size $|\tau(X)|$")
 
 
-    ax2 = plt.subplot2grid((2,2), (1, 0))
+    ax2 = plt.subplot2grid((4, 5), (2, 0), rowspan=2, colspan=2)
     ax2.plot(
         np.abs(test_y-result.y_pred), 
         y_pred_interval_sizes, 
@@ -165,7 +166,7 @@ for result in cp_results:
     ax2.set_ylabel(r"Prediction set size $|\tau(X)|$")
 
 
-    ax3 = plt.subplot2grid((2,2), (0, 1), rowspan=2)
+    ax3 = plt.subplot2grid((4, 5), (0, 2), rowspan=4, colspan=3)
     plt.scatter(
         test_X_pca[:,0],
         test_X_pca[:,1],
