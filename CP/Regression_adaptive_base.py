@@ -17,20 +17,18 @@ class RegressionAdaptiveBase(Base):
             sample
             
             verbose: whether to print progress bar or not
-
-            adaptive: bool whether to make the regression adaptive or not
         """
 
-        
         self.adaptive = kernel != None
         self.kernel = kernel
         self.verbose = verbose
-        if   name == None and kernel == None: name = self.__class__.__name__.replace("Adaptive", "").replace("adaptive", "")
-        elif name == None and kernel != None: name = f"{self.__class__.__name__}, kernel: {self.kernel.__name__}"
+        
+        if   name == None and not self.adaptive: name = self.__class__.__name__.replace("Adaptive", "").replace("adaptive", "")
+        elif name == None and self.adaptive: name = f"{self.__class__.__name__}, kernel: {self.kernel.__name__}"
 
         super().__init__(model, calibration_set_x, calibration_set_y, alpha, call_function_name, name)
     
-    def _quantile(self, scores):
+    def _quantile(self, calibration_scores):
         """
         compute the weighted 1-alpha quantile of the scores
 
@@ -42,13 +40,14 @@ class RegressionAdaptiveBase(Base):
         Returns:
         --------
             q: a function of the test points, X
+                the q function returns the estimated mean effective sample size
         """
         if self.adaptive:
-            return lambda X: self._weighted_quantile(scores, X)
+            return lambda X: self._weighted_quantile(calibration_scores, X)
         else:
-            q = super()._quantile(scores)
-            return lambda X: np.ones(len(X))*q
-    
+            q = super()._quantile(calibration_scores)
+            return lambda X: (np.ones(len(X))*q, self.n_cal)
+
     def _weighted_quantile(self, calibration_scores, X):
         """
         compute the weighted quantile of the scores
@@ -81,20 +80,23 @@ class RegressionAdaptiveBase(Base):
         sorted_scores = calibration_scores[ix]
         n_test = len(X)
         quantiles = []
+        effective_sample_sizes = []
     
         if self.verbose:  print(f"Fitting adaptive quantiles - {self.name}")
         if self.verbose:  iterable = tqdm(self.kernel(self.calibration_set_x, X), total = n_test)
         else:             iterable = iter(self.kernel(self.calibration_set_x, X))
         
         #for each data point, Xi, compute the weighted 1-alpha quantile
-        for weights in iterable:
-            weights = weights[ix]
-            weights_cum_sum = np.cumsum(weights)
-            if weights_cum_sum[-1] == 0:  cdf = np.arange(1,1+self.n_cal)/self.n_cal
-            else:                         cdf = weights_cum_sum/weights_cum_sum[-1]
+        for kernel_values in iterable:
+            kernel_values = kernel_values[ix]
+            kernel_values_cum_sum = np.cumsum(kernel_values)
+            effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
+            if kernel_values_cum_sum[-1] == 0:  cdf = np.arange(1,1+self.n_cal)/self.n_cal
+            else:                         cdf = kernel_values_cum_sum/kernel_values_cum_sum[-1]
             quantiles.append(sorted_scores[binary_search(cdf)])
 
-        return np.array(quantiles)
+        return np.array(quantiles), effective_sample_sizes
+
     
     def evaluate_coverage(self, X, y):
         """
@@ -110,7 +112,7 @@ class RegressionAdaptiveBase(Base):
             The empirical coverage of the test data points
             The prediction
         """
-        y_preds, pred_intervals = self.predict(X)
+        y_preds, pred_intervals, effective_sample_sizes = self.predict(X)
         in_pred_set = np.array(list(map(lambda a: a[1][0] <= a[0] <= a[1][1], zip(y, pred_intervals))))
         empirical_coverage = np.mean(in_pred_set)
-        return y_preds.squeeze(), pred_intervals, in_pred_set, empirical_coverage
+        return y_preds.squeeze(), pred_intervals, in_pred_set, empirical_coverage, effective_sample_sizes

@@ -1,7 +1,7 @@
 from .Regression_adaptive_base import RegressionAdaptiveBase
 import numpy as np
 
-class RegressionQuantile(RegressionAdaptiveBase):
+class RegressionAdaptiveQuantile(RegressionAdaptiveBase):
     def score_distribution(self):
         """
         Compute the scores of the calibration set.
@@ -32,11 +32,9 @@ class RegressionQuantile(RegressionAdaptiveBase):
         --------
             y_pred: the outputs of the regressor
             pred_interval: the prediction intervals (N_test x 2) matrix
+            mean_effective_sample_size:
         """
         y_pred = self.model(X)
+        q, effective_sample_sizes = self.q(X)
 
-        # AAAAARGHHH the predict function should output point estimate as well
-        # but it doesn't, so I just made it the mean of the two quantiles
-        # - Lauge
-
-        return np.mean(y_pred, axis = 1), y_pred[:, [0, -1]] + (self.q(X)[:,None] * np.array([-1, 1]))
+        return y_pred[:, 1], y_pred[:, [0, -1]] + (q[:,None] * np.array([-1, 1])), effective_sample_sizes

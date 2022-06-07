@@ -34,6 +34,8 @@ class RegressionAdaptiveSquaredError(RegressionAdaptiveBase):
             y_pred: the outputs of the regressor
             pred_interval: the prediction intervals (N_test x 2) matrix
         """
+
         y_pred = self.model(X)[:,None]
-        sqrt_q = np.sqrt(self.q(X))[:,None]
-        return y_pred, y_pred + sqrt_q*[-1,1]
+        q, effective_sample_sizes = self.q(X)
+        sqrt_q = np.sqrt(q)[:,None]
+        return y_pred, y_pred + sqrt_q*[-1,1], effective_sample_sizes
