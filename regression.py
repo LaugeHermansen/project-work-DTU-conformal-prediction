@@ -127,7 +127,6 @@ Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred
 cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
 
 
-
 #%%
 # plot a bunch of stuff
 
