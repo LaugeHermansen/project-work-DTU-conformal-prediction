@@ -87,9 +87,12 @@ class RegressionAdaptiveBase(Base):
         else:             iterable = iter(self.kernel(self.calibration_set_x, X))
         
         #for each data point, Xi, compute the weighted 1-alpha quantile
-        for kernel_values in iterable:
+        for i, kernel_values in enumerate(iterable):
             kernel_values = kernel_values[ix]
             kernel_values_cum_sum = np.cumsum(kernel_values)
+            if np.sum(kernel_values) == 0:
+                crappy_data_point = X[i]
+                raise ValueError('Encounteret test point where kernel(x) = 0 for all x in calibration set')
             effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
             if kernel_values_cum_sum[-1] == 0:  cdf = np.arange(1,1+self.n_cal)/self.n_cal
             else:                         cdf = kernel_values_cum_sum/kernel_values_cum_sum[-1]

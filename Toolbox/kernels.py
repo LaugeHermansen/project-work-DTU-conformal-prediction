@@ -16,13 +16,13 @@ def squared_exponential(length_scale: float):
 
     return squared_exp
 
-def KNN(N):
+def KNN(K):
 
     def KNN(cal_X, test_X):
         for x2 in test_X:
             d = np.sum((cal_X-x2)**2, axis = 1)
             kernel = np.zeros_like(d)
-            for i in np.argsort(d)[:N]:
+            for i in np.argsort(d)[:K]:
                 kernel[i] = 1
             yield kernel
 

@@ -1,5 +1,6 @@
 #%%
 from collections import namedtuple
+import sys, inspect
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,103 +13,47 @@ from sklearn.gaussian_process.kernels import Matern
 from Models import MultipleQuantileRegressor
 
 from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
+import CP
 from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
 
 from sklearn.model_selection import train_test_split
-from Toolbox.plot_helpers import barplot
+from Toolbox.plot_helpers import barplot, scatter_y_on_pcs
 from Toolbox.kernels import mahalanobis_sqe, squared_exponential, KNN
 from Toolbox.tools import multiple_split
-#%%
 
-#Read data
+from protein_data_set import X, y, stratify
 
-data = pd.read_csv('data/CASP.csv', header = 0)
 
-# test for missing data
-for c in data.columns:
-    print(f"{c}: nans: {np.sum(np.isnan(data[c]))}, {list(set(data[c].apply(type)))}, [{min(data[c])}, {max(data[c])}]")
-
-#%%
-#split x and y, and standardize x
-
-X = data[data.columns[1:]].to_numpy()
-
-y = data[data.columns[0]].to_numpy().squeeze()
-
+pca = PCA()
 st = StandardScaler()
-X_OG_standard = st.fit_transform(X)
-X_standard = np.hstack((X_OG_standard, X_OG_standard**2))#, X_OG_standard**3, X_OG_standard**4))
-X_standard = st.fit_transform(X_standard)
 
-
-#%%
-
-# create pseudo classes, by binning y to be used for stratification
-
-n_classes = 100
-classes_size = len(y)/n_classes
-
-stratify = np.empty_like(y)
-mask = np.argsort(y)
-
-for i in range(n_classes):
-    start = np.ceil(classes_size*i).astype(int)
-    stop = np.ceil(classes_size*(i+1)).astype(int)
-    stratify[mask[start:stop]] = i
-    plt.hist(y[mask[start:stop]], density=True, bins = 1)
-plt.show()
-
-# split dataset
+X_transform = np.hstack((X, X**2, X**3))
+X_standard = st.fit_transform(X_transform)
+X_pca = pca.fit_transform(X_standard)
 
 train_X, cal_X, test_X, train_y, cal_y, test_y, train_strat, cal_strat, test_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.3)
 
+scatter_y_on_pcs(X_pca, y)
 
-# train_X, temp_X, train_y, temp_y, train_stratify, temp_stratify = train_test_split(X_standard, y, stratify, test_size=0.9, stratify=stratify, shuffle = True)
-# cal_X, test_X, cal_y, test_y, cal_stratify, test_stratify = train_test_split(temp_X, temp_y, temp_stratify, test_size=0.7, stratify=temp_stratify, shuffle = True)
-
-# Run PCA
-
-pca = PCA()
-
-pca.fit(X_standard)
-
-X_pca = pca.transform(X_standard)
-
-plt.scatter(X_pca[:,0],X_pca[:,1],edgecolors='none',s=3, alpha = 0.1,c=y)
-plt.colorbar()
-plt.title('y on first two PCs')
-plt.show()
-plt.plot(np.cumsum(pca.explained_variance_ratio_))
-plt.title("explained variance of PCs")
-plt.show()
 #%%
 
+#set significance level of CP
 alpha = 0.2
 
-# Fit simple model (linear regression)
+# fit predictive models
+
+# Fit linear regression model
 lm = LinearRegression(n_jobs = 6)
-# lm = RandomForestRegressor(n_estimators = 100, n_jobs = 6)
 lm.fit(train_X, train_y)
 
-#%%
 
+# Fit Random Forest Regressor
+# rf = RandomForestRegressor(n_estimators = 100, n_jobs = 6)
+# rf.fit(train_X, train_y)
+
+# fit quanilt regressor (wrapper)
 qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-alpha/2])
-
-#%%
-
-# I changed the adaptive regression base a bit
-# Now, if you don't specify a kernel, it is just
-# the standard CP, but if you specify a kernel,
-# it is adaptive
-
-cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
-cplm_ad_KNN = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
-cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
-cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cpqr_ad_maha = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
-cpqr_ad_sqe = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
-cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
 # Fit a GP model
 # gp_model = GaussianProcessModelWrapper(None, cal_X, cal_y, alpha)
@@ -120,11 +65,31 @@ cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
 # cpgp_ad = RegressionAdaptiveSquaredError(gp, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential, verbose = True)
 # cpgp_st = RegressionAdaptiveSquaredError(gp, cal_X, cal_y, alpha, 'predict')
 
+#%%
 
-# Evaluate
+# create and fit cpmodels
+
+cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cplm_ad_KNN = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
+cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
+cpqr_ad_maha = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cpqr_ad_sqe = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
+
+#%%
+
+
+# Evaluate cp models
+
 # cp_models = [cplm_ad, cplm_st, cpgp_ad, cpgp_st, gp_model]
-cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_ad_KNN, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
+# cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_ad_KNN, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
 
+# automatically recognize all cp models in the script - put in a list
+clsmembers = set(tuple(zip(*inspect.getmembers(CP, inspect.isclass)))[0])
+cp_models = [var for var in list(vars().values()) if var.__class__.__name__ in clsmembers]
+
+# evaluate cp models in cp_models
 Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage", "effective_sample_sizes"])
 cp_results = [Result(cp, *cp.evaluate_coverage(test_X, test_y)) for cp in cp_models]
 
