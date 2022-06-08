@@ -54,15 +54,8 @@ cal_X, test_X, cal_y, test_y = train_test_split(temp_X, temp_y, test_size=0.5, s
 
 #%% Train underlying model 
 # model = LogisticRegression(C=4, max_iter=1000, n_jobs=4)
-class RFModel(RandomForestClassifier):
-    def __call__(self, X):
-        return self.predict_proba(X)
-
-class ABModel(AdaBoostClassifier):
-    def __call__(self, X):
-        return self.predict_proba(X)
           
-model = RandomForestClassifier(n_estimators=100, n_jobs = 6)#, max_depth=50)
+model = RandomForestClassifier(n_estimators=500, n_jobs = 6)#, max_depth=50)
 # model = ABModel(RandomForestClassifier(n_estimators=50, n_jobs = 6), n_estimators=200, learning_rate=1)
 
 model.fit(train_X, train_y)
@@ -72,7 +65,7 @@ print(model.score(test_X, test_y))
 
 #%% CP with ClassificationSoftmax
 # fit 
-CPmodelSoftmax = ClassificationSoftmax(model, cal_X, cal_y, 0.05)
+CPmodelSoftmax = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba')
 
 # empirical coverage
 print(CPmodelSoftmax.evaluate_coverage(test_X, test_y))

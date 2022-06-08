@@ -1,5 +1,6 @@
 from .Classification_base import ClassificationBase
 import numpy as np
+from Toolbox.plot_helpers import compute_barplot_data
 
 class ClassificationCumulativeSoftmax(ClassificationBase):
 
@@ -16,7 +17,7 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
             pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j in Tau(X_i)
         """
         scores = self.score(X)
-        return scores <= self.q
+        pred_set_test = scores <= self.q
 
         scores_idx = np.argsort(scores, axis = 1)
         pred_set = np.zeros_like(scores).astype(bool)
@@ -24,6 +25,11 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
             for j in scores_idx[i]:
                 pred_set[i,j] = True
                 if scores[i,j] >= self.q: break
+
+        diff = np.sum(pred_set, axis = 1) - np.sum(pred_set_test, axis = 1)
+
+        data = compute_barplot_data(diff)
+
         return pred_set
 
     def score_distribution(self):
