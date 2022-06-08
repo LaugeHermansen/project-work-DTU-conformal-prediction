@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 from Models import MultipleQuantileRegressor
-from CP import RegressionAdaptiveSquaredError, RegressionQuantile
+from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
 
 from Toolbox.tools import multiple_split
 from Toolbox.kernels import mahalanobis_sqe, squared_exponential
@@ -48,9 +48,17 @@ freq = 2*np.pi
 noise = 3
 y_sine_scaling = amp*np.sin(X*freq) + X*noise*np.random.randn(size)
 
+# large then small then large variance 
+a = 3
+b = -5
+c = 3
+x1 = 4*(X - 0.5)
+noise = 3
+y_hard = a*x1**2 + b*x1 + c + x1*noise*np.random.randn(size)
+
 #%% split into train, calibrate and test 
 #X, X_cali, X_test, y_square, y_square_cali, y_square_test, _, _, _ = multiple_split([0.4, 0.3, 0.3], X, y_square, np.ones_like(y_square))
-X, X_cali, X_test, y_square, y_square_cali, y_square_test, y_sine, y_sine_cali, y_sine_test, y_square_scaling, y_square_scaling_cali, y_square_scaling_test, y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test, _,_,_ = multiple_split([0.4, 0.3, 0.3], X, y_square, y_sine, y_square_scaling, y_sine_scaling, np.ones_like(y_square))
+X, X_cali, X_test, y_square, y_square_cali, y_square_test, y_sine, y_sine_cali, y_sine_test, y_square_scaling, y_square_scaling_cali, y_square_scaling_test, y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test, y_hard, y_hard_cali, y_hard_test, _,_,_ = multiple_split([0.4, 0.3, 0.3], X, y_square, y_sine, y_square_scaling, y_sine_scaling, y_hard, np.ones_like(y_square))
 X = X.reshape(-1,1)
 X_cali = X_cali.reshape(-1,1)
 X_test = X_test.reshape(-1,1)
@@ -72,7 +80,8 @@ X_test = X_test.reshape(-1,1)
 dataset_name = "squared"
 #y, y_cali, y_test = y_square, y_square_cali, y_square_test
 #y, y_cali, y_test = y_square_scaling, y_square_scaling_cali, y_square_scaling_test
-y, y_cali, y_test = y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test
+#y, y_cali, y_test = y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test
+y, y_cali, y_test = y_hard, y_hard_cali, y_hard_test
 
 #%% load models 
 # linear no feature transform
@@ -84,10 +93,10 @@ lm_squared = LinearRegressionWrapper(n_jobs = 6)
 lm_squared.fit(np.hstack((X, X**2)), y)
 
 # quantile regression no feature transforms 
-qr = MultipleQuantileRegressor(X, y, quantiles = [alpha/2, 1-alpha/2])
+qr = MultipleQuantileRegressor(X, y, quantiles = [alpha/2, 0.5, 1-alpha/2])
 
 # quantile regression squared feature transforms 
-qr_squared = MultipleQuantileRegressor(np.hstack((X, X**2)), y, quantiles = [alpha/2, 1-alpha/2])
+qr_squared = MultipleQuantileRegressor(np.hstack((X, X**2)), y, quantiles = [alpha/2, 0.5, 1-alpha/2])
 
 models = [lm, lm_squared, qr, qr_squared]
 model_names = ["linear", "linear squared", "quantile regression", "quantile regression squared"]
@@ -143,14 +152,14 @@ X_test_squard = np.hstack((X_test, X_test**2))
 cp_static_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
 cp_static_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.2), verbose=True)
-cp_anobis_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.2), verbose=True)
+cp_anobis_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
-cp_static_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
-cp_static_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
+cp_static_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
+cp_static_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.2), verbose=True)
-cp_anobis_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.2), verbose=True)
+cp_anobis_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
 cp_models = [cp_static_lm, cp_anobis_lm, cp_static_qr, cp_anobis_qr]
 cp_model_names = ["Linear Regression", "Linear Regression Adaptive", "Quantile Regression", "Quantile Regression Adaptive"]
@@ -158,29 +167,35 @@ cp_models_squared = [cp_static_lm_squared, cp_anobis_lm_squared, cp_static_qr_sq
 #%% evaluate on test set. 
 X_grid = np.arange(0, 1, 0.01).reshape(-1, 1)
 X_grid_squard = np.hstack((X_grid, X_grid**2))
+colors = ["b", "k", "g", "r"]
 
-def plot_results(model, X, y, X_grid, caption=None):
+def plot_results(model, X_grid, caption=None, color=None):
     preds = model(X_grid)
-    plt.plot(X_grid, preds[0])
-    plt.plot(X_grid, preds[1][:, 0])
-    plt.plot(X_grid, preds[1][:, 1])
-    plt.plot(X, y, '.')
+    plt.plot(X_grid, preds[0], color=color)
+    plt.plot(X_grid, preds[1][:, 0], color=color)
+    plt.plot(X_grid, preds[1][:, 1], color=color)
     plt.title(caption)
-    plt.savefig(f"C:/Users/david/Desktop/imgs for fag/{caption}")
-    plt.show()
 
-def plot_results_2(model, X, y, X_grid, caption=None):
+def plot_results_2(model, X_grid, caption=None, color=None):
     preds = model(X_grid)
-    plt.plot(X_grid[:, 0], preds[0])
-    plt.plot(X_grid[:, 0], preds[1][:, 0])
-    plt.plot(X_grid[:, 0], preds[1][:, 1])
-    plt.plot(X[:, 0], y, '.')
+    plt.plot(X_grid[:, 0], preds[0], color=color)
+    plt.plot(X_grid[:, 0], preds[1][:, 0], color=color)
+    plt.plot(X_grid[:, 0], preds[1][:, 1], color=color)
     plt.title(caption + " Squared Features")
-    plt.savefig(f"C:/Users/david/Desktop/imgs for fag/{caption} Squared Features")
-    plt.show()
+
 
 for i in range(len(cp_models)):
-    plot_results(cp_models[i], X_test, y_test, X_grid, caption=cp_model_names[i])
+    plt.subplot(2,2, i+1)
+    plt.plot(X_test, y_test, ',')
+    plot_results(cp_models[i], X_grid, caption=cp_model_names[i])
+
+plt.savefig(f"C:/Users/david/Desktop/imgs for fag/4inOne")
+plt.show()
 
 for i in range(len(cp_models)):
-    plot_results_2(cp_models_squared[i], X_test, y_test, X_grid_squard, caption=cp_model_names[i])
+    plot_results_2(cp_models_squared[i], X_grid_squard, caption=cp_model_names[i], color=colors[i])
+
+plt.legend(cp_model_names, labelcolor=colors)
+plt.plot(X_test, y_test, ',')
+plt.savefig(f"C:/Users/david/Desktop/imgs for fag/4inone Squared Features")
+plt.show()
