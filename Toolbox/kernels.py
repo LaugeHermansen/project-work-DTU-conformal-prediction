@@ -12,7 +12,7 @@ def mahalanobis_sqe(length_scale: float):
 def squared_exponential(length_scale: float):
     def squared_exp(cal_X, test_X):
         for x in test_X:
-            yield np.exp(-np.sum((cal_X-x)**2/(2*length_scale**2), axis = 1))
+            yield np.exp(-np.sum((cal_X-x)**2, axis = 1)/(2*length_scale**2))
 
     return squared_exp
 
