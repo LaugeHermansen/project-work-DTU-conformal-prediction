@@ -29,7 +29,8 @@ plt.text(0, -0.7, "All patients", ha="center")
 
 
 plt.axis("off")
-plt.legend(["Healthy", "Diseased"])
+plt.legend(["Healthy", "Sick"])
+plt.figure(figsize=(8, 6), dpi=100)
 plt.show()
 
 
@@ -41,6 +42,7 @@ plt.text(0, -0.8, "Group 1", ha="center")
 plt.text(1, -0.8, "Group 2", ha="center")
 
 plt.axis("off")
-plt.legend(["Healthy", "Diseased"])
+plt.legend(["Healthy", "Sick"])
+plt.figure(figsize=(8, 6), dpi=100)
 plt.show()
 
