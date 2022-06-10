@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.gaussian_process.kernels import Matern
 from Models import MultipleQuantileRegressor
 
-from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
+from CP import RegressionSquaredError, RegressionQuantile
 import CP
 from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
@@ -69,13 +69,13 @@ qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-al
 
 # create and fit cpmodels
 
-cplm_ad_maha = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
-cplm_ad_KNN = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
-cplm_ad_sqe = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
-cplm_st = RegressionAdaptiveSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cpqr_ad_maha = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
-cpqr_ad_sqe = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
-cpqr_st = RegressionAdaptiveQuantile(qr, cal_X, cal_y, alpha, 'predict')
+cplm_ad_maha = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cplm_ad_KNN = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
+cplm_ad_sqe = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cplm_st = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
+cpqr_ad_maha = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cpqr_ad_sqe = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
 #%%
 

@@ -5,7 +5,6 @@ from scipy.stats import norm
 import numpy as np
 
 from CP import Base
-from CP import RegressionAdaptiveBase
 
 
 class GaussianProcessModelWrapper(Base):
@@ -57,19 +56,4 @@ class GaussianProcessModelWrapper(Base):
         self.n_cal = len(calibration_set_x)
 
         self.model.fit(calibration_set_x, calibration_set_y)
-
-    def evaluate_coverage(self, X, y):
-        """
-        Evaluate the empirical coverage of the test data points.
-        
-        Args:
-        -----
-            X: the features of the test data points
-            y: the true labels/values of the test data points
-        
-        Returns:
-        ---------
-            The empirical coverage of the test data points
-        """
-        return RegressionAdaptiveBase.evaluate_coverage(self, X, y)
 

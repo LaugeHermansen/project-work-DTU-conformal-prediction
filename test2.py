@@ -1,39 +1,8 @@
-#%%
-from Toolbox.kernels import squared_exponential
+
 import numpy as np
-
-A = np.array([[1,1],[2,2],[4,2]])
-
-B1 = np.array([[3,6],
-              [2,2],
-              [1,6],
-              [7,8],
-              ])
-B2 = np.array([[9,6],
-              [2,9],
-              [6,6],
-              [7,12],
-              ])
-
-B = np.stack((B1,B2))
-
-
-def squared_exponential2(length_scale: float):
-    def squared_exp(cal_X, test_X):
-        d_sq = np.sum((test_X[:,:,None] - cal_X.T[None,:,:])**2, axis = 1)
-        sqex = np.exp(-d_sq/(2*length_scale**2))
-        for row in sqex:
-            yield row
-
-    return squared_exp
-
-sq1 = squared_exponential(1)
-sq2 = squared_exponential2(1)
-
-for w1, w2 in zip(sq1(A,B1), sq2(A,B1)):
-    print(np.all(w1==w2))
-    print(w1,w2)
-
+a = np.array([[0,1],[1,0],[1,0],[1,1]]).astype(bool)
+y = np.array([0,0,1,1])
+print(a[np.arange(len(y)), y])
 
 #%%
 

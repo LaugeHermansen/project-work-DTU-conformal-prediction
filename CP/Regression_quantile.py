@@ -1,7 +1,7 @@
-from .Regression_adaptive_base import RegressionAdaptiveBase
+from .Regression_base import RegressionBase
 import numpy as np
 
-class RegressionAdaptiveQuantile(RegressionAdaptiveBase):
+class RegressionQuantile(RegressionBase):
     def score_distribution(self):
         """
         Compute the scores of the calibration set.
