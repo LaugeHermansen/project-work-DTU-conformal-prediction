@@ -14,7 +14,7 @@ class GaussianProcessModelWrapper(Base):
         Model and call_function_name are not used in this class.
         """
         # model = GaussianProcessRegressor(Matern(length_scale=0.05, length_scale_bounds="fixed", nu=3), alpha=50, n_restarts_optimizer=0)
-        model = GaussianProcessRegressor(Matern() + WhiteKernel(), alpha=50, n_restarts_optimizer=0)
+        model = GaussianProcessRegressor(Matern() + WhiteKernel())
         
         super().__init__(
             model, 
