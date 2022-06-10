@@ -15,24 +15,33 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
 
         Returns:
         ---------
-            pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j in Tau(X_i)
+        Args:
+        -----
+            X: The new data points
+            
+        Returns:
+        --------
+            y_pred: underlying model prediction or output
+            pred_sets: Prediction sets - one for each test point.
+            effective_sample_sizes: N_text x 1 np.array (returned from self.q)
         """
         scores = self.score(X)
+        y_pred = np.argmax(self.model(X), axis = 1)
         q, effective_sample_sizes = self.q(X)
         pred_set_test = scores <= q
 
         scores_idx = np.argsort(scores, axis = 1)
-        pred_set = np.zeros_like(scores).astype(bool)
+        pred_sets = np.zeros_like(scores).astype(bool)
         for i in range(len(scores)):
             for j in scores_idx[i]:
-                pred_set[i,j] = True
+                pred_sets[i,j] = True
                 if scores[i,j] >= q: break
 
-        diff = np.sum(pred_set, axis = 1) - np.sum(pred_set_test, axis = 1)
+        diff = np.sum(pred_sets, axis = 1) - np.sum(pred_set_test, axis = 1)
 
         # data = compute_barplot_data(diff)
 
-        return pred_set
+        return y_pred, pred_sets, effective_sample_sizes
 
     def score_distribution(self):
         """
