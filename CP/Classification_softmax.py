@@ -48,7 +48,9 @@ class ClassificationSoftmax(ClassificationBase):
             pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j \in Tau(X_i)
         """
         scores = self.score(X)
-        return scores <= self.q
+        y_pred = np.argmax(self.model(X), axis = 1)
+        q, effective_sample_sizes = self.q(X)
+        return y_pred, scores <= q, effective_sample_sizes
 
 
 
