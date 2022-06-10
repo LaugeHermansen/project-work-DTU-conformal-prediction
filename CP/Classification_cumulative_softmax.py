@@ -1,6 +1,6 @@
 from .Classification_base import ClassificationBase
 import numpy as np
-from Toolbox.plot_helpers import compute_barplot_data
+# from Toolbox.plot_helpers import compute_barplot_data
 
 class ClassificationCumulativeSoftmax(ClassificationBase):
 
@@ -28,7 +28,7 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
 
         diff = np.sum(pred_set, axis = 1) - np.sum(pred_set_test, axis = 1)
 
-        data = compute_barplot_data(diff)
+        # data = compute_barplot_data(diff)
 
         return pred_set
 
