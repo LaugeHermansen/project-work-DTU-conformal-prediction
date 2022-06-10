@@ -28,7 +28,6 @@ plt.figure(figsize=(10, 6), dpi=200)
 plt.scatter(x[d == 0], y[d == 0], s=6, alpha=0.6, c="red")
 plt.scatter(x[d == 1], y[d == 1], s=6, alpha=0.6, c="green")
 plt.text(0, 0.8, f"$\hat U = {np.mean(d)*100:.2f}\%$", size=20, ha="center")
-plt.arrow(0, -0.8, 0, -0.4, width=0.04, color="black")
 
 
 group_y_offset = -2.2
@@ -42,6 +41,15 @@ plt.scatter(x_g[d == 0], y_g[d == 0], s=6, alpha=0.6, c="red")
 plt.scatter(x_g[d == 1], y_g[d == 1], s=6, alpha=0.6, c="green")
 
 for i in range(len(p)):
+    plt.arrow(
+        0, 
+        -0.7, 
+        (i * group_separation_scale + group_x_offset) * 0.3,
+        (group_y_offset + 0.7) * 0.3, 
+        width=0.04, 
+        color="black"
+    )
+    
     plt.text(
         i * group_separation_scale + group_x_offset, 
         -3.2 - (i % 2) * 0.6, 
