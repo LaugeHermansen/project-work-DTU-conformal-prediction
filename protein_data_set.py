@@ -27,5 +27,5 @@ if __name__ == "__main__":
         print(f"{c}: nans: {np.sum(np.isnan(data[c]))}, {list(set(data[c].apply(type)))}, [{min(data[c])}, {max(data[c])}]")
 
     for i in range(n_classes):
-        plt.hist(y[mask[start:stop]], density=True, bins = 1, color='b')
+        plt.hist(y[stratify == i], density=True, bins = 1, color='b')
     plt.show()

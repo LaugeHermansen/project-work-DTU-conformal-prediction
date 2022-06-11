@@ -132,7 +132,7 @@ for result in results:
 # labels2, heights2 = zip(*bar2)
 
 
-fig, ax = barplot(lenc.inverse_transform(labels[0]), tuple(heights),#, he4),
+fig, ax = barplot(lenc.inverse_transform(labels[0]), tuple(heights),
 tuple([res.cp_model.name for res in results]), (14,5))
 
 plt.xticks(rotation = 45, fontsize = 20)
