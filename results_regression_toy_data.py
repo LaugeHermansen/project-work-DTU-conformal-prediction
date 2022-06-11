@@ -16,14 +16,19 @@ class LinearRegressionWrapper(LinearRegression):
     def __call__(self, *args, **kwargs):
         return self.predict(*args, **kwargs)
 
-class GPWrapper(GaussianProcessModelWrapper):
+class GPWrapper(GaussianProcessModelWrapper): # TODO fix Guassian process wrapper so it standardizes it self and transforms back in predict. 
     def __call__(self, *args, **kwargs):
         return self.predict(*args, **kwargs)
 
 # Hyper parameters 
 alpha = 0.05
-features = [lambda x : x, lambda x : x**2]
+features_squared = lambda x : (x, x**2)
+get_squared_features = lambda x : np.hstack(features_squared(x))
+get_features = [lambda x: x, get_squared_features]
 feature_names = ["no transform", "squared"]
+kernels = [None, squared_exponential(0.1)]
+kernel_names = ["Static", "Adaptive Squared Exponential"]
+model_names = ["Linear regression", "Quantile Regression", "Guassian Process"]
 runs = 100
 size = 1000
 train = 250
@@ -79,118 +84,187 @@ plt.show()
 
 #%% load models 
 cp_model_names = ["Linear Regression", "Linear Regression Adaptive", "Quantile Regression", "Quantile Regression Adaptive", "Gaussian Process", "Gaussian Process Adaptive"]
-def load_models(X, y, y_cali, alpha):
-    X_squared = np.hstack((X, X**2))
-    # linear no feature transform
-    lm = LinearRegressionWrapper(n_jobs = 6)
-    lm.fit(X, y)
+def load_models(X, y, alpha, features=get_features):
+    # get linear models 
+    lms = []
+    for i in get_features:
+        lm = LinearRegressionWrapper(n_jobs = 6)
+        lm.fit(i(X), y)
+        lms.append(lm)
 
-    # squared features linear model 
-    lm_squared = LinearRegressionWrapper(n_jobs = 6)
-    lm_squared.fit(X_squared, y)
+    # get quantile regression models 
+    qrs = []
+    for i in get_features:
+        qr = MultipleQuantileRegressor(i(X), y, quantiles = [alpha/2, 0.5, 1-alpha/2])
+        qrs.append(qr)
+
+    # get Guassian Process models 
+    gps = []
+    for i in get_features:
+        gp = GPWrapper(None, i(X), y, alpha)
+        gps.append(gp)
+
+    # # linear no feature transform
+    # lm = LinearRegressionWrapper(n_jobs = 6)
+    # lm.fit(X, y)
+
+    # # squared features linear model 
+    # lm_squared = LinearRegressionWrapper(n_jobs = 6)
+    # lm_squared.fit(X_squared, y)
 
     # quantile regression no feature transforms 
-    qr = MultipleQuantileRegressor(X, y, quantiles = [alpha/2, 0.5, 1-alpha/2])
+    # qr = MultipleQuantileRegressor(X, y, quantiles = [alpha/2, 0.5, 1-alpha/2])
 
-    # quantile regression squared feature transforms 
-    qr_squared = MultipleQuantileRegressor(X_squared, y, quantiles = [alpha/2, 0.5, 1-alpha/2])
+    # # quantile regression squared feature transforms 
+    # qr_squared = MultipleQuantileRegressor(X_squared, y, quantiles = [alpha/2, 0.5, 1-alpha/2])
 
     # Gaussian Process
-    gp = GPWrapper(None, X, y, alpha)
+    # gp = GPWrapper(None, X, y, alpha)
 
-    # Guassian Process with squared features 
-    gp_squared = GPWrapper(None, X_squared, y, alpha)
+    # # Guassian Process with squared features 
+    # gp_squared = GPWrapper(None, X_squared, y, alpha)
 
-    # Don' really use these - it was more like if we need to split this into two methods. 
-    models = [lm, lm_squared, qr, qr_squared, gp, gp_squared]
-    #model_names = ["linear", "linear squared", "quantile regression", "quantile regression squared"]
+    return [lms, qrs, gps]
+
+def fit_cp(models, X_cali, y_cali, features=get_features, kernels=kernels, verbose=True):
     
-    X_cali_squard = np.hstack((X_cali, X_cali**2))
-    #X_test_squard = np.hstack((X_test, X_test**2))
+    # Create fitted CP's with dimensions "features", "model", "CP score function" 
+    cp_models = [] 
+    for i, features in enumerate(features): 
+        cp_feature = []
+        for model in models:
+            model = model[i]
+            scores = []
+            for kernel in kernels: 
+                #scores.append(RegressionAdaptiveSquaredError(model, X_cali, y_cali, alpha, kernel=kernel, verbose=verbose))
+                if type(model) == LinearRegressionWrapper:
+                    scores.append(RegressionAdaptiveSquaredError(model, get_features[i](X_cali), y_cali, alpha, kernel=kernel, verbose=verbose))
+                else:
+                    scores.append(RegressionAdaptiveQuantile(model, get_features[i](X_cali), y_cali, alpha, kernel=kernel, verbose=verbose))
+            cp_feature.append(scores) 
+        cp_models.append(cp_feature)
+    # cp_static_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
+    # cp_static_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-    cp_static_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
-    cp_static_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
+    # cp_anobis_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_anobis_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
-    cp_anobis_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-    cp_anobis_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_static_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
+    # cp_static_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-    cp_static_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
-    cp_static_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
-
-    cp_anobis_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-    cp_anobis_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_anobis_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_anobis_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
     
-    cp_static_gp = RegressionAdaptiveQuantile(gp, X_cali, y_cali, alpha,  verbose=True)
-    cp_static_gp_squared = RegressionAdaptiveQuantile(gp_squared, X_cali_squard, y_cali, alpha,  verbose=True)
+    # cp_static_gp = RegressionAdaptiveQuantile(gp, X_cali, y_cali, alpha,  verbose=True)
+    # cp_static_gp_squared = RegressionAdaptiveQuantile(gp_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-    cp_anobis_gp = RegressionAdaptiveQuantile(gp, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-    cp_anobis_gp_squared = RegressionAdaptiveQuantile(gp_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_anobis_gp = RegressionAdaptiveQuantile(gp, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+    # cp_anobis_gp_squared = RegressionAdaptiveQuantile(gp_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
 
-    cp_models = [cp_static_lm, cp_anobis_lm, cp_static_qr, cp_anobis_qr, cp_static_gp, cp_anobis_gp]
-    cp_models_squared = [cp_static_lm_squared, cp_anobis_lm_squared, cp_static_qr_squared, cp_anobis_qr_squared, cp_static_gp_squared, cp_anobis_gp_squared]
-    return models, cp_models, cp_models_squared
+    # cp_models = [cp_static_lm, cp_anobis_lm, cp_static_qr, cp_anobis_qr, cp_static_gp, cp_anobis_gp]
+    # cp_models_squared = [cp_static_lm_squared, cp_anobis_lm_squared, cp_static_qr_squared, cp_anobis_qr_squared, cp_static_gp_squared, cp_anobis_gp_squared]
+    return cp_models
 
-def plot_results(model, X_grid, caption=None, color=None):
-    preds = model(X_grid)
+# def plot_results(model, X_grid, caption=None, color=None):
+#     preds = model(X_grid)
+#     plt.plot(X_grid, preds[0], color=color)
+#     plt.plot(X_grid, preds[1][:, 0], color=color)
+#     plt.plot(X_grid, preds[1][:, 1], color=color)
+#     plt.title(caption)
+
+# def plot_results_squared(model, X_grid, caption=None, color=None):
+#     preds = model(X_grid)
+#     plt.plot(X_grid[:, 0], preds[0], color=color)
+#     plt.plot(X_grid[:, 0], preds[1][:, 0], color=color)
+#     plt.plot(X_grid[:, 0], preds[1][:, 1], color=color)
+#     plt.title(caption + " Squared Features")
+
+def plot_cp_model(model, X_grid, transform, caption=None, color=None):
+    preds = model(transform(X_grid))
     plt.plot(X_grid, preds[0], color=color)
     plt.plot(X_grid, preds[1][:, 0], color=color)
     plt.plot(X_grid, preds[1][:, 1], color=color)
     plt.title(caption)
 
-def plot_results_squared(model, X_grid, caption=None, color=None):
-    preds = model(X_grid)
-    plt.plot(X_grid[:, 0], preds[0], color=color)
-    plt.plot(X_grid[:, 0], preds[1][:, 0], color=color)
-    plt.plot(X_grid[:, 0], preds[1][:, 1], color=color)
-    plt.title(caption + " Squared Features")
-
 X_grid = np.arange(0, 1, 0.01).reshape(-1, 1)
-X_grid_squared = np.hstack((X_grid, X_grid**2))
-colors = ["b", "k", "g", "r", "m", "y"]
+#X_grid_squared = np.hstack((X_grid, X_grid**2))
+colors = ["b", "k", "g", "r", "m", "y"] # TODO make this better 
 
-#%% Show the what happens each iteration (fit how the models fit)
+#%% Show the what happens each iteration (show how the models fit - both adaptive and non)
 datasets = [[y_homosedatic, y_homosedatic_cali, y_homosedatic_test, "homosedatic"], 
             [y_hetrosedatic, y_hetrosedatic_cali, y_hetrosedatic_test, "hetrosedatic"], 
             [y_discontinuous, y_discontinuous_cali, y_discontinuous_test, "discontinuous"]]
 
 for dataset in datasets: 
     # For all three data sets generate four plots. Two for non squared features two for squared features. 
-    models, cp_models, cp_models_squared = load_models(X, dataset[0], dataset[1], alpha)
+    [y_train, y_cali, y_test, data_name] = dataset
+    # Fit the models 
+    models = load_models(X, y_train, alpha=alpha, features=get_features)
 
-    for i in range(len(cp_models)):
-        plt.subplot(3,2, i+1)
-        plt.plot(X_test, dataset[2], ',')
-        plot_results(cp_models[i], X_grid, caption=cp_model_names[i])
-    
-    plt.tight_layout()
-    plt.savefig(f"./results/{dataset[3]}_side_by_side")
-    plt.clf()
-    
-    for i in range(len(cp_models)):
-        plot_results(cp_models[i], X_grid, caption=cp_model_names[i], color=colors[i])
-    plt.plot(X_test, dataset[2], ',')
-    
-    plt.tight_layout()
-    plt.savefig(f"./results/{dataset[3]}_six_in_one")
-    plt.clf()
+    # Fit CP models 
+    cp_models = fit_cp(models, X_cali, y_cali, features=get_features, kernels=kernels, verbose=True)
 
-    for i in range(len(cp_models_squared)):
-        plt.subplot(3,2, i+1)
-        plt.plot(X_test, dataset[2], ',')
-        plot_results_squared(cp_models_squared[i], X_grid_squared, caption=cp_model_names[i])
+    for feature_n, feature in enumerate(cp_models): 
+        
+        for model_n, models in enumerate(feature): 
+            for kernel_n, model in enumerate(models):
+                plt.subplot(len(feature), len(kernels), 1 + model_n*len(kernels) + kernel_n)
+                plt.plot(X_test, dataset[2], ',')
+                plot_cp_model(model, X_grid, transform=get_features[feature_n], caption=f"{model_names[model_n]} {kernel_names[kernel_n]}", color=None) 
+        plt.suptitle(f"{data_name} {feature_names[feature_n]}")
+        plt.tight_layout()
+        plt.savefig(f"./results/{data_name} {feature_names[feature_n]}")
+        plt.clf()
     
-    plt.tight_layout()
-    plt.savefig(f"./results/{dataset[3]}_side_by_side_squared")
-    plt.clf()
+    for feature_n, feature in enumerate(cp_models): 
+        for kernel_n in range(len(kernels)):
+            for model_n, models in enumerate(feature): 
+                plot_cp_model(models[kernel_n], X_grid, transform=get_features[feature_n], color=colors[model_n*len(kernels) + kernel_n]) 
+            plt.plot(X_test, dataset[2], ',')
+            plt.suptitle(f"All models {data_name} {feature_names[feature_n]} {kernel_names[kernel_n]}")
+            plt.tight_layout()
+            plt.savefig(f"./results/All models {data_name} {feature_names[feature_n]} {kernel_names[kernel_n]}")
+            plt.clf()
+
+
+# for dataset in datasets: 
+#     # For all three data sets generate four plots. Two for non squared features two for squared features. 
+#     models, cp_models, cp_models_squared = load_models(X, dataset[0], dataset[1], alpha)
+
+#     for i in range(len(cp_models)):
+#         plt.subplot(3,2, i+1)
+#         plt.plot(X_test, dataset[2], ',')
+#         plot_results(cp_models[i], X_grid, caption=cp_model_names[i])
     
-    for i in range(len(cp_models_squared)):
-        plot_results_squared(cp_models_squared[i], X_grid_squared, caption=cp_model_names[i], color=colors[i])
-    plt.plot(X_test, dataset[2], ',')
+#     plt.tight_layout()
+#     plt.savefig(f"./results/{dataset[3]}_side_by_side")
+#     plt.clf()
     
-    plt.tight_layout()
-    plt.savefig(f"./results/{dataset[3]}_six_in_one_squared")
-    plt.clf()
+#     for i in range(len(cp_models)):
+#         plot_results(cp_models[i], X_grid, caption=cp_model_names[i], color=colors[i])
+#     plt.plot(X_test, dataset[2], ',')
+    
+#     plt.tight_layout()
+#     plt.savefig(f"./results/{dataset[3]}_six_in_one")
+#     plt.clf()
+
+#     for i in range(len(cp_models_squared)):
+#         plt.subplot(3,2, i+1)
+#         plt.plot(X_test, dataset[2], ',')
+#         plot_results_squared(cp_models_squared[i], X_grid_squared, caption=cp_model_names[i])
+    
+#     plt.tight_layout()
+#     plt.savefig(f"./results/{dataset[3]}_side_by_side_squared")
+#     plt.clf()
+    
+#     for i in range(len(cp_models_squared)):
+#         plot_results_squared(cp_models_squared[i], X_grid_squared, caption=cp_model_names[i], color=colors[i])
+#     plt.plot(X_test, dataset[2], ',')
+    
+#     plt.tight_layout()
+#     plt.savefig(f"./results/{dataset[3]}_six_in_one_squared")
+#     plt.clf()
 
     # TODO : make some plots that shows how the different distributions change 
 
