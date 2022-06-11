@@ -1,3 +1,4 @@
+from collections import namedtuple
 import numpy as np
 from tqdm import tqdm
 
@@ -58,13 +59,13 @@ class Base():
         raise NotImplementedError()
 
 
-    def _in_pred_set(prediction_sets, y):
+    def _in_pred_set(self, prediction_sets, y):
         """
         Compute the data points where the true label is in the prediction set
 
         Args:
         -----
-            prediction_set: 
+            prediction_sets: 
             y:
         
         Returns:
@@ -73,12 +74,28 @@ class Base():
         """
         raise NotImplementedError()
     
+    def _pred_set_sizes(self, prediction_sets):
+        """
+        Compute the sizes of the prediction sets
 
-    # Keep your mits off my grub - means that the methods below should be general
-    # and there is no need to implement them
+        Args:
+        -----
+            prediction_sets:
+        
+        Returns:
+        --------
+            Return 1D float array of length Ntest
+        """
+        raise NotImplementedError()
+
     
 
-    def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, name = None, kernel = None, verbose = False):
+    # Keep your mits off my grub - means that the methods below should be general
+    # and there is no need to change them
+    
+
+    def __init__(self, model, calibration_set_x, calibration_set_y, alpha,
+                call_function_name = None, name = None, kernel = None, verbose = False, raise_error_at_outliers = False):
 
         if call_function_name != None:
             model.__class__.__call__ = getattr(model.__class__, call_function_name)
@@ -90,10 +107,11 @@ class Base():
         self.verbose = verbose
         self.model = model
         self.alpha = alpha
+        self.raise_error_at_outliers = raise_error_at_outliers
         
-        self.name = name if name != None else self.__class__.__name__
+        name = name if name != None else self.__class__.__name__
         if self.adaptive: name = f"{name} LCP, kernel: {self.kernel.__name__}"
-
+        self.name = name
         self.calibrate(calibration_set_x, calibration_set_y)
     
 
@@ -156,20 +174,38 @@ class Base():
         quantiles = []
         effective_sample_sizes = []
     
-        if self.verbose:  print(f"Fitting adaptive quantiles - {self.name}")
+        if self.verbose:  print(f"\nFitting adaptive quantiles - {self.name}")
         if self.verbose:  iterable = tqdm(self.kernel(self.calibration_set_x, X), total = n_test)
         else:             iterable = iter(self.kernel(self.calibration_set_x, X))
         
         #for each data point, Xi, compute the weighted 1-alpha quantile
-        for i, kernel_values in enumerate(iterable):
-            kernel_values = kernel_values[ix]
+        for i, kernel_values_raw in enumerate(iterable):
+            #sort kernel values with same mask as calibration scores
+            kernel_values = kernel_values_raw[ix]
             kernel_values_cum_sum = np.cumsum(kernel_values)
-            if np.sum(kernel_values) == 0:
-                crappy_data_point = X[i]
-                raise ValueError('Encountered test point where kernel(x) = 0 for all x in calibration set')
-            effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
-            if kernel_values_cum_sum[-1] == 0:  cdf = np.arange(1,1+self.n_cal)/self.n_cal
-            else:                         cdf = kernel_values_cum_sum/kernel_values_cum_sum[-1]
+
+            #if all kernel values are 0
+            if np.sum(kernel_values) == 0 or kernel_values_cum_sum[-1] == 0:
+
+                #create error messages
+                msg_txt = f'Encountered test point, X[{i}], where kernel(x) = 0 for all x in calibration set'
+                msg_X_i = f'X[{i}] = {X[i]}'
+                if self.raise_error_at_outliers:
+                    raise ValueError(msg_txt + '\n' + msg_X_i)
+                elif self.verbose:
+                    print('\n' + msg_txt + '\nkernel(x) was set to 1 for all x in calibration set\n' + msg_X_i)
+
+                #if allowed to keep running - use constant kernel i.e. don't weigh any points.
+                kernel_values = np.ones_like(kernel_values_raw)
+                kernel_values_cum_sum = np.cumsum(kernel_values)
+                effective_sample_sizes.append(None)
+            else:
+                kernel_values = kernel_values/max(kernel_values_raw)*1e2
+                kernel_values_cum_sum = kernel_values_cum_sum/max(kernel_values_raw)*1e2
+                if np.sum(kernel_values**2) == 0:
+                    raise ValueError('Something went completely wrong with that kernel')
+                effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
+            cdf = kernel_values_cum_sum/kernel_values_cum_sum[-1]
             quantiles.append(sorted_scores[binary_search(cdf)])
 
         return np.array(quantiles), np.array(effective_sample_sizes)
@@ -201,16 +237,37 @@ class Base():
         
         Returns:
         --------
-            The empirical coverage of the test data points
-            The prediction
+            results: namedtuple object containing all the local
+            variables defined within the method, except for 
+            X and y and the ones that that begin with an underscore
         """
+        
+        # Compute results - These will be included in output 'result' if they don't begin with "_"
+        
+        # predictions from ml model, prediction sets, and effective sample sizes
         y_preds, pred_sets, effective_sample_sizes = self.predict(X)
+
+        # prediction set sizes
+        pred_set_sizes = self._pred_set_sizes(pred_sets)
+
+        # boolean array - True if data point is an outlier according to kernel
+        # meaning that kernel(x) = 0 for all calibration points
+        kernel_outlier = effective_sample_sizes == np.array([None]*len(X))
+        
+        mean_effective_sample_size = np.mean(effective_sample_sizes[~kernel_outlier].astype(float))
         in_pred_set = self._in_pred_set(pred_sets, y)
         empirical_coverage = np.mean(in_pred_set)
-        return y_preds.squeeze(), pred_sets, in_pred_set, empirical_coverage, effective_sample_sizes
+        
+        # Collect results
+        _local_variables = list(locals().items())
+        _no = set(('X', 'y'))
+        _return_variable_names, _outputs = zip(*[[name, obj] for (name, obj) in _local_variables if ((name not in _no) and (name[0] != "_"))])
+        result = namedtuple('Result', ['cp_model'] + list(_return_variable_names[1:]))(*_outputs)
 
-    def __call__(self,X):
-       return self.predict(X)
+        return result
+
+    # def __call__(self,X):
+    #    return self.predict(X)
 
 
 

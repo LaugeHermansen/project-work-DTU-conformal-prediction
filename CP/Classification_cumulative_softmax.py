@@ -28,14 +28,14 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
         scores = self.score(X)
         y_pred = np.argmax(self.model(X), axis = 1)
         q, effective_sample_sizes = self.q(X)
-        pred_set_test = scores <= q
+        pred_set_test = scores <= q[:, None]
 
         scores_idx = np.argsort(scores, axis = 1)
         pred_sets = np.zeros_like(scores).astype(bool)
         for i in range(len(scores)):
             for j in scores_idx[i]:
                 pred_sets[i,j] = True
-                if scores[i,j] >= q: break
+                if scores[i,j] >= q[i]: break
 
         diff = np.sum(pred_sets, axis = 1) - np.sum(pred_set_test, axis = 1)
 

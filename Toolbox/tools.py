@@ -1,5 +1,9 @@
 from sklearn.model_selection import train_test_split
 import numpy as np
+import sys, inspect
+import CP
+import matplotlib.pyplot as plt
+
 
 def multiple_split(split_sizes, *arrays, keep_frac = 1.):
     """
@@ -37,3 +41,8 @@ def multiple_split(split_sizes, *arrays, keep_frac = 1.):
         ret.append(arrays_ret)
     ret.append(arrays)
     return tuple([partition_of_variabel for variable in zip(*ret) for partition_of_variabel in variable])
+
+
+
+def get_all_cp_models(locals):
+    return [b for b in locals.values() if inspect.isclass(b.__class__) and not inspect.isclass(b) and 'CP.' in repr(b)]

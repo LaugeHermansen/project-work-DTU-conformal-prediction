@@ -3,11 +3,14 @@ import numpy as np
 
 class ClassificationBase(Base):
 
-    def _in_pred_set(prediction_sets, y):
+    def _in_pred_set(self, prediction_sets, y):
         """
         prediction_sets should be Ntest x C boolean np.arrays
         """
         return prediction_sets[np.arange(len(y)), y]
+    
+    def _pred_set_sizes(self, prediction_sets):
+        return np.sum(prediction_sets, axis = 1)
 
     # def evaluate_coverage(self, X, y):
     #     """

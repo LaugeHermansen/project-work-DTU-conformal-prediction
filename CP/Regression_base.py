@@ -4,8 +4,11 @@ from tqdm import tqdm
 
 class RegressionBase(Base):
 
-    def _in_pred_set(prediction_sets, y):
+    def _in_pred_set(self, prediction_sets, y):
         return np.array(list(map(lambda a: a[1][0] <= a[0] <= a[1][1], zip(y, prediction_sets))))
+
+    def _pred_set_sizes(self, prediction_sets):
+        return prediction_sets[:,1] - prediction_sets[:,0]
 
     # def __init__(self, model, calibration_set_x, calibration_set_y, alpha, call_function_name = None, name = None, kernel = None, verbose = False):
     #     """

@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from Toolbox.tools import multiple_split
-
 
 data = pd.read_csv('data/CASP.csv', header = 0)
 

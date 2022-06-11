@@ -52,7 +52,7 @@ class ClassificationSoftmax(ClassificationBase):
         scores = self.score(X)
         y_pred = np.argmax(self.model(X), axis = 1)
         q, effective_sample_sizes = self.q(X)
-        return y_pred, scores <= q, effective_sample_sizes
+        return y_pred, scores <= q[:,None], effective_sample_sizes
 
 
 
