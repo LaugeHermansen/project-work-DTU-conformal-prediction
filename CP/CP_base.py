@@ -234,19 +234,29 @@ class Base():
         Args:
         ------
             X: the features of the test data points
+            
             y: the true labels/values of the test data points
         
         Returns:
         --------
             results: dataclass object containing:
+
                 cp_model_name: str
+
                 mean_effective_sample_size: int
+
                 empirical_coverage: int
+
                 y_preds: the predictions of the underlying model
+
                 pred_sets: np.ndarray
+
                 effective_sample_sizes: np.ndarray, float, shape = (n_test, 1)
+
                 pred_set_sizes: np.ndarray, float, shape = (n_test, 1)
+
                 kernel_outlier: np.ndarray, bool, shape = (n_test, 1)
+
                 in_pred_set: np.ndarray, bool, shape = (n_test, 1)
 
         """
@@ -275,7 +285,7 @@ class Base():
        return self.predict(X)
 
 
-@dataclass
+@dataclass(frozen=True)
 class CPEvalData:
         cp_model_name: str
         mean_effective_sample_size: int
@@ -286,4 +296,3 @@ class CPEvalData:
         pred_set_sizes: np.ndarray
         kernel_outlier: np.ndarray
         in_pred_set: np.ndarray
-
