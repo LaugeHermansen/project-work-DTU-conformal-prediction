@@ -1,6 +1,7 @@
-from collections import namedtuple
+from dataclasses import dataclass
 import numpy as np
 from tqdm import tqdm
+
 
 class Base():
 
@@ -257,17 +258,24 @@ class Base():
         mean_effective_sample_size = np.mean(effective_sample_sizes[~kernel_outlier].astype(float))
         in_pred_set = self._in_pred_set(pred_sets, y)
         empirical_coverage = np.mean(in_pred_set)
-        
-        # Collect results
-        _local_variables = list(locals().items())
-        _no = set(('X', 'y'))
-        _return_variable_names, _outputs = zip(*[[name, obj] for (name, obj) in _local_variables if ((name not in _no) and (name[0] != "_"))])
-        result = namedtuple('Result', ['cp_model'] + list(_return_variable_names[1:]))(*_outputs)
+
+        result = CPEvalData(self.name, mean_effective_sample_size, empirical_coverage, y_preds, pred_sets, effective_sample_sizes, pred_set_sizes, kernel_outlier, in_pred_set)
 
         return result
 
-    # def __call__(self,X):
-    #    return self.predict(X)
+    def __call__(self,X):
+       return self.predict(X)
 
 
+@dataclass
+class CPEvalData:
+        cp_model_name: str
+        mean_effective_sample_size: int
+        empirical_coverage: int
+        y_preds: np.ndarray
+        pred_sets: np.ndarray
+        effective_sample_sizes: np.ndarray
+        pred_set_sizes: np.ndarray
+        kernel_outlier: np.ndarray
+        in_pred_set: np.ndarray
 
