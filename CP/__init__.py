@@ -2,6 +2,6 @@ from .Classification_base import ClassificationBase
 from .Classification_cumulative_softmax import ClassificationCumulativeSoftmax
 from .Classification_softmax import ClassificationSoftmax
 from .CP_base import Base
-from .Regression_adaptive_base import RegressionAdaptiveBase
-from .Regression_adaptive_squared_error import RegressionAdaptiveSquaredError
-from .Regression_adaptive_quantile import RegressionAdaptiveQuantile
+from .Regression_base import RegressionBase
+from .Regression_squared_error import RegressionSquaredError
+from .Regression_quantile import RegressionQuantile
