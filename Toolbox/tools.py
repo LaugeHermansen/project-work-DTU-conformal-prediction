@@ -82,7 +82,6 @@ def stratified_coverage(feature_samples: np.ndarray, in_pred_set: np.ndarray, n_
         feature_samples:
             the feature to stratify over.
             for MSC, pass `feature_samples=pred_set_sizes`
-            1d boolean array of length N_test 
 
         in_pred_set:
             the output from `cp_model.evaluate_coverage.in_pred_set`
