@@ -21,11 +21,11 @@ size = 1000
 X = np.random.rand(size)
 
 # Homoscedastic square
-a = 2
+a = 3
 b = -5
 c = 3
-x1 = 4*(X - 0)
-noise = 1
+x1 = 4*(X - 0.5)
+noise = 2
 y_square = a*x1**2 + b*x1 + c + noise*np.random.randn(size)
 
 # Homoscedastic sine
@@ -56,25 +56,39 @@ x1 = 4*(X - 0.5)
 noise = 3
 y_hard = a*x1**2 + b*x1 + c + x1*noise*np.random.randn(size)
 
+# mega hard
+noise = 1
+a = 2
+b = -3
+c = 2
+x1 = 2*(X - 0.5)
+y_sine_hard = x1*noise *np.random.randn(size) + a*x1**2 + c*(x1 < 0.5) + b*x1 + noise *np.random.randn(size)/4
+
+#%% Show dataset
+plt.rcParams["figure.figsize"] = (10, 5)
+
+plt.subplot(1, 3, 1)
+plt.plot(X, y_square, ',')
+
+plt.subplot(1, 3, 2)
+plt.plot(X, y_hard, ',')
+
+plt.subplot(1, 3, 3)
+plt.plot(X, y_sine_hard, ',')
+
+
+plt.suptitle("The three toy data sets used for regression")
+plt.tight_layout()
+plt.savefig("./dataset")
+plt.show()
+
 #%% split into train, calibrate and test 
 #X, X_cali, X_test, y_square, y_square_cali, y_square_test, _, _, _ = multiple_split([0.4, 0.3, 0.3], X, y_square, np.ones_like(y_square))
-X, X_cali, X_test, y_square, y_square_cali, y_square_test, y_sine, y_sine_cali, y_sine_test, y_square_scaling, y_square_scaling_cali, y_square_scaling_test, y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test, y_hard, y_hard_cali, y_hard_test, _,_,_ = multiple_split([0.4, 0.3, 0.3], X, y_square, y_sine, y_square_scaling, y_sine_scaling, y_hard, np.ones_like(y_square))
+X, X_cali, X_test, y_square, y_square_cali, y_square_test, y_sine, y_sine_cali, y_sine_test, y_square_scaling, y_square_scaling_cali, y_square_scaling_test, y_sine_scaling, y_sine_scaling_cali, y_sine_scaling_test, y_hard, y_hard_cali, y_hard_test, y_sine_hard, y_sine_hard_cali, y_sine_hard_test _,_,_ = multiple_split([0.4, 0.3, 0.3], X, y_square, y_sine, y_square_scaling, y_sine_scaling, y_hard, y_sine_hard, np.ones_like(y_square))
 X = X.reshape(-1,1)
 X_cali = X_cali.reshape(-1,1)
 X_test = X_test.reshape(-1,1)
 
-# #%% Show dataset
-# plt.plot(X, y_square, '.')
-# plt.show()
-
-# plt.plot(X, y_sine, '.')
-# plt.show()
-
-# plt.plot(X, y_square_scaling, '.')
-# plt.show()
-
-# plt.plot(X, y_sine_scaling, '.')
-# plt.show()
 
 #%% Choose dataset 
 dataset_name = "squared"
@@ -189,6 +203,7 @@ for i in range(len(cp_models)):
     plt.plot(X_test, y_test, ',')
     plot_results(cp_models[i], X_grid, caption=cp_model_names[i])
 
+plt.tight_layout()
 plt.savefig(f"C:/Users/david/Desktop/imgs for fag/4inOne")
 plt.show()
 

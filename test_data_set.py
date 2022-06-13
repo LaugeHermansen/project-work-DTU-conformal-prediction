@@ -19,9 +19,15 @@ label = "education"
 
 #Load data
 data = pd.read_csv("data/adult.data", names = columns).applymap(lambda x: x.strip() if isinstance(x, str) else x)
+n1=len(data)
 #remove missing values
 data = data.applymap(lambda x: np.nan if x == "?" else x).dropna(axis = 0)
+n2=len(data)
 
+print(f"Amount of removed/faulty data points {n1-n2}")
+data["race"].value_counts()
+n_white = data["race"].value_counts()["White"]
+print(f"Total amount of people {n2}, Non-white people {n2-n_white} which is {(n2 - n_white)/n2}")
 
 #%%
 # One-hot encode and split into train and test
