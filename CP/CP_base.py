@@ -238,9 +238,17 @@ class Base():
         
         Returns:
         --------
-            results: namedtuple object containing all the local
-            variables defined within the method, except for 
-            X and y and the ones that that begin with an underscore
+            results: dataclass object containing:
+                cp_model_name: str
+                mean_effective_sample_size: int
+                empirical_coverage: int
+                y_preds: the predictions of the underlying model
+                pred_sets: np.ndarray
+                effective_sample_sizes: np.ndarray, float, shape = (n_test, 1)
+                pred_set_sizes: np.ndarray, float, shape = (n_test, 1)
+                kernel_outlier: np.ndarray, bool, shape = (n_test, 1)
+                in_pred_set: np.ndarray, bool, shape = (n_test, 1)
+
         """
         
         # Compute results - These will be included in output 'result' if they don't begin with "_"
