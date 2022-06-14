@@ -1,24 +1,23 @@
 import numpy as np
 
-def mahalanobis_sqe(length_scale: float):
-    def mahalanobis(cal_X, test_X):
+def mahalanobis_exponential(length_scale: float):
+
+    def mahalanobis_exponential(cal_X, test_X):
         cov_inv = np.linalg.pinv(np.cov(cal_X.T))
         for x2 in test_X:
             d = cal_X-x2
-            kernel = np.exp(-np.sum((d @ cov_inv)*d, axis = 1)/(2*length_scale**2))
-            # if np.sum(kernel) == 0:
-            #     print("hmm")
+            kernel = np.exp(-np.sqrt(np.sum((d @ cov_inv)*d, axis = 1))/length_scale)
             yield kernel
-            
-    return mahalanobis
 
-def squared_exponential(length_scale: float):
-    def squared_exp(cal_X, test_X):
+    return mahalanobis_exponential
+
+def exponential(length_scale: float):
+    def exponential(cal_X, test_X):
         for x in test_X:
-            kernel = np.exp(-np.sum((cal_X-x)**2, axis = 1)/(2*length_scale**2))
+            kernel = np.exp(-np.sqrt(np.sum((cal_X-x)**2, axis = 1))/length_scale)
             yield kernel
 
-    return squared_exp
+    return exponential
 
 def KNN(N):
 
