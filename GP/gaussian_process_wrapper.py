@@ -38,7 +38,7 @@ class GaussianProcessModelWrapper(Base):
             Prediction, and an interval or set of confidence
         """
         y_mean, y_std = self.model.predict(X, return_std=True)
-        pred_interval = y_mean[:, None] + np.array([0, -1, 1]) * y_std[:,None] * norm.ppf(q = 1-self.alpha)
+        pred_interval = y_mean[:, None] + np.array([-1, 0, 1]) * y_std[:,None] * norm.ppf(q = 1-self.alpha)
         #pred_interval = y_mean[:, None] + np.array([ -1, 1]) * y_std[:,None] * norm.ppf(q = 1-self.alpha)
         #return y_mean, pred_interval
         return pred_interval
