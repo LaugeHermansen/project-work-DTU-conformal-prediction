@@ -12,25 +12,28 @@ from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
 from Toolbox.tools import multiple_split
 from Toolbox.kernels import mahalanobis_exponential, exponential
-from scipy.stats import norm
+from scipy.stats import t, norm
 import os 
 #plt.rcParams['text.usetex'] = True
 
+np.random.seed(42)
 
 if not "results" in os.listdir("."):
     os.mkdir("./results")
-if not "all_models" in os.listdir("./results"):
-    os.mkdir("./results/all_models")
-if not "one_model" in os.listdir("./results"):
-    os.mkdir("./results/one_model")
-if not "stand_alone" in os.listdir("./results"):
-    os.mkdir("./results/stand_alone")
-if not "coverage_histograms" in os.listdir("./results"):
-    os.mkdir("./results/coverage_histograms")
-if not "pred_histograms" in os.listdir("./results"):
-    os.mkdir("./results/pred_histograms")
-if not "histograms" in os.listdir("./results"):
-    os.mkdir("./results/histograms")
+if not "final_toy_data" in os.listdir("./results"):
+    os.mkdir("./results/final_toy_data")
+if not "all_models" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/all_models")
+if not "one_model" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/one_model")
+if not "stand_alone" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/stand_alone")
+if not "coverage_histograms" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/coverage_histograms")
+if not "pred_histograms" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/pred_histograms")
+if not "histograms" in os.listdir("./results/final_toy_data"):
+    os.mkdir("./results/final_toy_data/histograms")
     
 #%% create data sets 
 # Wrapper for Linear regression so that it has a call function 
@@ -38,12 +41,15 @@ class LinearRegressionWrapper(LinearRegression):
     def fit(self, X, y, alpha): 
         super().fit(X, y)
         self.sd = np.std(super().predict(X) - y, ddof=1)
+        self.n = len(y)
+        self.Xinv = np.linalg.pinv(X.T @ X)
         self.alpha = alpha
-        self.q = norm.ppf(1-alpha/2) 
+        self.q = t.ppf(1-alpha/2, df=self.n-1) 
     
     def predict(self, X): 
         preds = super().predict(X)
-        return preds[:,None] + np.array([[-1, 0, 1]])*self.sd*self.q
+        return preds[:,None] + self.q*np.array([[-1, 0, 1]])*self.sd*np.sqrt(1 + np.sum(X @ self.Xinv * X, axis=1))[:,None]
+        #return preds[:,None] + np.array([[-1, 0, 1]])*self.sd*self.q
         
     def __call__(self, *args, **kwargs):
         return self.predict(*args, **kwargs)
@@ -130,14 +136,14 @@ class CoverageWrapper():
         
 
 # Hyper parameters 
-fig_size = (13, 8)
-alpha = 0.05
+fig_size = (8, 13)
+alpha = 0.10
 get_normal_features = lambda x: x
 get_squared_features = lambda x : np.hstack((x, x**2))
 get_features = [get_normal_features, get_squared_features]
 feature_names = ["No Feature Transform", "Squared Feature"]
-kernels = [None, exponential(0.01)]
-kernel_names = ["Normal CP", "Naive LCP Exponential"]
+kernels = [None]
+kernel_names = ["Normal CP"]
 model_names = ["Linear Regression", "Quantile Regression", "Gaussian Process"]
 
 X_grid = np.arange(0, 1, 0.01).reshape(-1, 1) 
@@ -163,7 +169,7 @@ train_cali_test = np.array([train, cali, test])/size
 a = 3
 b = -5
 c = 15
-noise = 3
+noise = 6
 
 def create_data_set(size, train, cali, a, b, c, noise):
     test = size - train - cali
@@ -171,9 +177,9 @@ def create_data_set(size, train, cali, a, b, c, noise):
 
     X = np.random.rand(size)
     x1 = 4*(X - 0.5)
-    y_homosedatic = a*x1**2 + b*x1 + c + noise*np.random.randn(size)
-    y_hetrosedatic = a*x1**2 + b*x1 + c + x1*noise*np.random.randn(size)
-    y_discontinuous = x1*noise *np.random.randn(size) + a*x1**2 + c*(x1 < 0.5) + b*x1 + noise *np.random.randn(size)/4
+    y_homosedatic = a*x1**2 + b*x1 + c + noise*np.random.rand(size)
+    y_hetrosedatic = a*x1**2 + b*x1 + c + x1*noise*np.random.rand(size)
+    y_discontinuous = x1*noise *np.random.rand(size) + a*x1**2 + c*(x1 < 0.5) + b*x1 + noise *np.random.rand(size)/4
 
     X, X_cali, X_test, y_homosedatic, y_homosedatic_cali, y_homosedatic_test, y_hetrosedatic, y_hetrosedatic_cali, y_hetrosedatic_test, y_discontinuous, y_discontinuous_cali, y_discontinuous_test, _,_,_ = multiple_split(train_cali_test, X, y_homosedatic, y_hetrosedatic, y_discontinuous, np.ones_like(y_hetrosedatic))
     X = X.reshape(-1,1)
@@ -183,7 +189,7 @@ def create_data_set(size, train, cali, a, b, c, noise):
 
 #%% Show one instance of the data set 
 X, X_cali, X_test, y_homosedatic, y_homosedatic_cali, y_homosedatic_test, y_hetrosedatic, y_hetrosedatic_cali, y_hetrosedatic_test, y_discontinuous, y_discontinuous_cali, y_discontinuous_test = create_data_set(size, train, cali, a, b, c, noise)
-plt.figure(figsize=fig_size, dpi=200)
+plt.figure(figsize=(13, 8), dpi=200)
 #plt.rcParams["figure.figsize"] = (10, 5)
 
 plt.subplot(1, 3, 1)
@@ -210,7 +216,7 @@ if show_cali:
 
 plt.suptitle("The three toy data sets used for regression")
 plt.tight_layout()
-plt.savefig("./results/datasets")
+plt.savefig("./results/final_toy_data/datasets")
 plt.show()
 
 #%% load models 
@@ -307,9 +313,6 @@ for dataset in datasets:
         for model_n, model_type in enumerate(feature): 
             # Plot the model without CP 
             plt.subplot(len(feature), len(kernels) + 1, 1 + model_n*(len(kernels) + 1))
-            # preds = models[model_n][feature_n](get_features[feature_n](X_grid))
-            # plt.plot(X_grid, preds, color=colors[0])
-            # plt.fill_between(X_grid[:, 0], preds[:, 0], preds[:, 2], alpha=0.1)
             plot_model(models[model_n][feature_n], X_grid, get_features[feature_n], caption=f"{model_names[model_n]}", color="k", coverage=print_coverage, X_test=X_test, y_test=y_test)
             if show_test: 
                 plt.plot(X_test, y_test, dot_style, alpha=test_a, color=test_col)
@@ -329,7 +332,7 @@ for dataset in datasets:
         # Save image to results/stand_alone
         plt.suptitle(f"{data_name} {feature_names[feature_n]}")
         plt.tight_layout()
-        plt.savefig(f"./results/stand_alone/{data_name}_{feature_names[feature_n]}")
+        plt.savefig(f"./results/final_toy_data/stand_alone/{data_name}_{feature_names[feature_n]}")
         plt.clf()
     
     # Plot the models with the same CP applied 
@@ -348,7 +351,7 @@ for dataset in datasets:
             plt.legend()
             plt.suptitle(f"All Models {data_name} {feature_names[feature_n]} {kernel_names[kernel_n]}")
             plt.tight_layout()
-            plt.savefig(f"./results/all_models/{data_name}_{feature_names[feature_n]}_{kernel_names[kernel_n]}")
+            plt.savefig(f"./results/final_toy_data/all_models/{data_name}_{feature_names[feature_n]}_{kernel_names[kernel_n]}")
             plt.clf()
 
     # Plot one model with its different CP configurations applied 
@@ -358,9 +361,6 @@ for dataset in datasets:
             #plt.rcParams["figure.figsize"] = (fig_size)
             for kernel_n, cp_model in enumerate(model_type):
                 plot_cp_model(cp_model, X_grid, transform=get_features[feature_n], color=colors[kernel_n + 1], label=kernel_names[kernel_n], coverage=print_coverage, X_test=X_test, y_test=y_test)
-            # preds = models[model_n][feature_n](get_features[feature_n](X_grid))
-            # plt.plot(X_grid, preds, color=colors[0], label="Without CP")
-            # plt.fill_between(X_grid[:, 0], preds[:, 0], preds[:, 2], alpha=0.2)
             plot_model(models[model_n][feature_n], X_grid, get_features[feature_n], label="Without CP", color=colors[0], coverage=print_coverage, X_test=X_test, y_test=y_test)
             if show_test: 
                 plt.plot(X_test, y_test, dot_style, alpha=test_a, color=test_col)
@@ -369,7 +369,7 @@ for dataset in datasets:
             plt.legend()
             plt.suptitle(f"Model {model_names[model_n]} with feature {feature_names[feature_n]} and dataset {data_name}")
             plt.tight_layout()
-            plt.savefig(f"./results/one_model/{data_name}_{model_names[model_n]}_{feature_names[feature_n]}")
+            plt.savefig(f"./results/final_toy_data/one_model/{data_name}_{model_names[model_n]}_{feature_names[feature_n]}")
             plt.clf()
 
 #%% Run all models on the three data sets runs times 
@@ -411,9 +411,17 @@ for run in range(runs):
 avg_coverage = np.mean(coverage, axis=4)
 avg_pred_size = np.mean(pred_size, axis=4)
 
-print(avg_coverage)
-print(avg_pred_size)
+coverage_path = "./results/final_toy_data/histograms/coverage.npy"
+pred_size_path = "./results/final_toy_data/histograms/pred_size.npy"
+np.save(coverage_path, coverage)
+np.save(pred_size_path, pred_size)
+
+#print(avg_coverage)
+#print(avg_pred_size)
 # %%
+# coverage = np.load(coverage_path)
+# pred_size = np.load(pred_size_path)
+
 def plot_histogram(data, colors, legends, title, trans=0.5, bins=20):
     for i, d in enumerate(data): 
         print(d, bins, trans, legends, colors)
@@ -428,5 +436,5 @@ for dataset_n, dataset in enumerate(coverage):
             legends = ["Without CP"]
             legends.extend(kernel_names)
             plot_histogram(model, colors=colors, legends=legends, title=title)
-            plt.savefig(f"./results/coverage_histograms/{title}")
+            plt.savefig(f"./results/final_toy_data/coverage_histograms/{title}")
             plt.clf()
