@@ -21,17 +21,22 @@ def plot_weights(x, y, x_0, y_0, weights, title):
     # Shade weights    
     plt.scatter(x, y, c="tab:blue", alpha=weights)
     
-    plt.title(title)
     
+    # Set plot labels
+    plt.title(title)
+
+    plt.xlabel("Feature 1")
+    plt.ylabel("Feature 2")
+    
+    # Set axis scaling
     plt.axis("equal")
-    plt.xlabel("x")
-    plt.ylabel("y")
     
     
     # Show
     plt.show()
 
 
+# Create dataset
 rng = np.random.default_rng(16)
 n = 1000
 
