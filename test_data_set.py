@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
-from Toolbox.kernels import KNN_mahalnobis, KNN, squared_exponential
+from Toolbox.kernels import KNN_mahalnobis, KNN, exponential
 from Toolbox.plot_helpers import barplot, compute_barplot_data
 from Toolbox.tools import get_all_cp_models, multiple_split
 
@@ -75,7 +75,7 @@ print(model.score(test_X, test_y))
 CPmodelSoftmax1 = ClassificationSoftmax(model, cal_X, cal_y, 0.2, 'predict_proba')
 # CPmodelSoftmax2 = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba', kernel = KNN_mahalnobis(10), verbose = True)
 # CPmodelSoftmax3 = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba', kernel = KNN(10), verbose = True)
-CPmodelSoftmax4 = ClassificationSoftmax(model, cal_X, cal_y, 0.2, 'predict_proba', kernel = squared_exponential(10000), verbose = True)
+CPmodelSoftmax4 = ClassificationSoftmax(model, cal_X, cal_y, 0.2, 'predict_proba', kernel = exponential(10000), verbose = True)
 # CPmodelCumulativeSoftmax = ClassificationCumulativeSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba')
 
 cp_models = get_all_cp_models(locals())

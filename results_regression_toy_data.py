@@ -8,7 +8,7 @@ from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
 from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
 from Toolbox.tools import multiple_split
-from Toolbox.kernels import mahalanobis_sqe, squared_exponential
+from Toolbox.kernels import mahalanobis_exponential, exponential
 from scipy.stats import norm
 
 #%% create data sets 
@@ -38,7 +38,7 @@ get_normal_features = lambda x: x
 get_squared_features = lambda x : np.hstack((x, x**2))
 get_features = [get_normal_features, get_squared_features]
 feature_names = ["No Feature Transform", "Squared Feature"]
-kernels = [None, squared_exponential(0.1)]
+kernels = [None, exponential(0.1)]
 kernel_names = ["Static", "Adaptive Squared Exponential"]
 model_names = ["Linear Regression", "Quantile Regression", "Guassian Process"]
 

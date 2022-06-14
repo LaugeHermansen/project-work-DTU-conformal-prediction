@@ -19,7 +19,7 @@ from GP.gaussian_process_wrapper import GaussianProcessModelWrapper
 
 
 from Toolbox.plot_helpers import barplot, scatter_y_on_pcs
-from Toolbox.kernels import mahalanobis_sqe, squared_exponential, KNN
+from Toolbox.kernels import mahalanobis_exponential, exponential, KNN
 from Toolbox.tools import get_all_cp_models, multiple_split, stratified_coverage
 
 from protein_data_set import X, y, stratify
@@ -71,9 +71,9 @@ qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-al
 
 # cplm_ad_maha = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
 # cplm_ad_KNN = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
-cplm_ad_sqe = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
+cplm_ad_sqe = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = exponential(1), verbose = True)
 # cplm_st = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cpqr_ad_maha = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
+cpqr_ad_maha = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_exponential(1), verbose = True)
 # cpqr_ad_sqe = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential(1), verbose = True)
 cpqr_st = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 

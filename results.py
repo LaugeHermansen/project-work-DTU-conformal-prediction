@@ -7,7 +7,7 @@ from Models import MultipleQuantileRegressor
 from CP import RegressionSquaredError, RegressionQuantile
 
 from Toolbox.tools import multiple_split
-from Toolbox.kernels import mahalanobis_sqe, squared_exponential
+from Toolbox.kernels import mahalanobis_exponential, exponential
 
 alpha = 0.05
 
@@ -166,14 +166,14 @@ X_test_squard = np.hstack((X_test, X_test**2))
 cp_static_lm = RegressionSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
 cp_static_lm_squared = RegressionSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_lm = RegressionSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-cp_anobis_lm_squared = RegressionSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_lm = RegressionSquaredError(lm, X_cali, y_cali, alpha,  kernel = exponential(0.1), verbose=True)
+cp_anobis_lm_squared = RegressionSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = exponential(0.1), verbose=True)
 
 cp_static_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
 cp_static_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-cp_anobis_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  kernel = exponential(0.1), verbose=True)
+cp_anobis_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = exponential(0.1), verbose=True)
 
 cp_models = [cp_static_lm, cp_anobis_lm, cp_static_qr, cp_anobis_qr]
 cp_model_names = ["Linear Regression", "Linear Regression Adaptive", "Quantile Regression", "Quantile Regression Adaptive"]
