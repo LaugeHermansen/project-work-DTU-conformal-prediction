@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
-from Toolbox.kernels import KNN_mahalnobis, KNN, exponential
+from Toolbox.kernels import mahalanobis_KNN, KNN, exponential
 from Toolbox.plot_helpers import barplot, compute_barplot_data
 from Toolbox.tools import get_all_cp_models, multiple_split
 

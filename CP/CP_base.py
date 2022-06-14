@@ -110,7 +110,7 @@ class Base():
         self.alpha = alpha
         self.raise_error_at_outliers = raise_error_at_outliers
         
-        name = name if name != None else self.__class__.__name__
+        name = name if name != None else f"{self.__class__.__name__} {model.__class__.__name__}"
         if self.adaptive: name = f"{name} LCP, kernel: {self.kernel.__name__}"
         self.name = name
         self.calibrate(calibration_set_x, calibration_set_y)
@@ -174,11 +174,15 @@ class Base():
         n_test = len(X)
         quantiles = []
         effective_sample_sizes = []
+        n_kernel_outliers = 0
     
         if self.verbose:  print(f"\nFitting adaptive quantiles - {self.name}")
         if self.verbose:  iterable = tqdm(self.kernel(self.calibration_set_x, X), total = n_test)
         else:             iterable = iter(self.kernel(self.calibration_set_x, X))
+        # [H_n+1, i for i in 1...n]
         
+
+
         #for each data point, Xi, compute the weighted 1-alpha quantile
         for i, kernel_values_raw in enumerate(iterable):
             #sort kernel values with same mask as calibration scores
@@ -200,14 +204,26 @@ class Base():
                 kernel_values = np.ones_like(kernel_values_raw)
                 kernel_values_cum_sum = np.cumsum(kernel_values)
                 effective_sample_sizes.append(None)
+            #otherwize
             else:
-                kernel_values = kernel_values/max(kernel_values_raw)*1e2
-                kernel_values_cum_sum = kernel_values_cum_sum/max(kernel_values_raw)*1e2
+                norm_constant = 1/max(kernel_values_raw)*1e2
+                kernel_values = kernel_values*norm_constant
+                kernel_values_cum_sum = kernel_values_cum_sum*norm_constant
                 if np.sum(kernel_values**2) == 0:
-                    raise ValueError('Something went completely wrong with that kernel')
+                    raise ValueError('Something went completely wrong with that kernel - all weights sum to 0')
                 effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
-            cdf = kernel_values_cum_sum/kernel_values_cum_sum[-1]
-            quantiles.append(sorted_scores[binary_search(cdf)])
+            cdf = kernel_values_cum_sum/(kernel_values_cum_sum[-1]+1*norm_constant)
+            
+            # WARN: Theoretically should return a quantile of infinity if the 1-alpha quantile is 
+            #  higher than any of the calibration scores. Instead sets the quantile to highest known instead.
+            index = binary_search(cdf)
+            if index == len(cdf):
+                n_kernel_outliers += 1
+                index -= 1
+
+            quantiles.append(sorted_scores[index])
+
+        if self.verbose: print(f"Encountered level 1-alpha quantile = infinity in {n_kernel_outliers} test data points")
 
         return np.array(quantiles), np.array(effective_sample_sizes)
 
@@ -255,7 +271,7 @@ class Base():
 
                 pred_set_sizes: np.ndarray, float, shape = (n_test, 1)
 
-                kernel_outlier: np.ndarray, bool, shape = (n_test, 1)
+                kernel_error: np.ndarray, bool, shape = (n_test, 1)
 
                 in_pred_set: np.ndarray, bool, shape = (n_test, 1)
 
@@ -265,19 +281,20 @@ class Base():
         
         # predictions from ml model, prediction sets, and effective sample sizes
         y_preds, pred_sets, effective_sample_sizes = self.predict(X)
+        y_preds = y_preds.squeeze()
 
         # prediction set sizes
         pred_set_sizes = self._pred_set_sizes(pred_sets)
 
         # boolean array - True if data point is an outlier according to kernel
         # meaning that kernel(x) = 0 for all calibration points
-        kernel_outlier = effective_sample_sizes == np.array([None]*len(X))
-        
-        mean_effective_sample_size = np.mean(effective_sample_sizes[~kernel_outlier].astype(float))
+        kernel_errors = effective_sample_sizes == np.array([None]*len(X))
+
+        mean_effective_sample_size = np.mean(effective_sample_sizes[~kernel_errors].astype(float))
         in_pred_set = self._in_pred_set(pred_sets, y)
         empirical_coverage = np.mean(in_pred_set)
 
-        result = CPEvalData(self.name, mean_effective_sample_size, empirical_coverage, y_preds, pred_sets, effective_sample_sizes, pred_set_sizes, kernel_outlier, in_pred_set)
+        result = CPEvalData(self.name, mean_effective_sample_size, empirical_coverage, y_preds, pred_sets, effective_sample_sizes, pred_set_sizes, kernel_errors, in_pred_set)
 
         return result
 
@@ -294,5 +311,5 @@ class CPEvalData:
         pred_sets: np.ndarray
         effective_sample_sizes: np.ndarray
         pred_set_sizes: np.ndarray
-        kernel_outlier: np.ndarray
+        kernel_errors: np.ndarray
         in_pred_set: np.ndarray

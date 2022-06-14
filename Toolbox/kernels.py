@@ -5,7 +5,7 @@ def mahalanobis_exponential(length_scale: float):
     def mahalanobis_exponential(cal_X, test_X):
         cov_inv = np.linalg.pinv(np.cov(cal_X.T))
         for x2 in test_X:
-            d = cal_X-x2
+            d = (cal_X-x2).astype(np.float64)
             kernel = np.exp(-np.sqrt(np.sum((d @ cov_inv)*d, axis = 1))/length_scale)
             yield kernel
 
@@ -13,8 +13,9 @@ def mahalanobis_exponential(length_scale: float):
 
 def exponential(length_scale: float):
     def exponential(cal_X, test_X):
-        for x in test_X:
-            kernel = np.exp(-np.sqrt(np.sum((cal_X-x)**2, axis = 1))/length_scale)
+        for x2 in test_X:
+            d = (cal_X-x2).astype(np.float64)
+            kernel = np.exp(-np.sqrt(np.sum(d**2, axis = 1))/length_scale)
             yield kernel
 
     return exponential
@@ -32,9 +33,9 @@ def KNN(N):
     return KNN
 
 
-def KNN_mahalnobis(N):
+def mahalanobis_KNN(N):
 
-    def KNN_mahalnobis(cal_X, test_X):
+    def mahalanobis_KNN(cal_X, test_X):
         cov_inv = np.linalg.pinv(np.cov(cal_X.T))
         for x2 in test_X:
             d = cal_X-x2
@@ -44,4 +45,4 @@ def KNN_mahalnobis(N):
                 kernel[i] = 1
             yield kernel
             
-    return KNN_mahalnobis
+    return mahalanobis_KNN
