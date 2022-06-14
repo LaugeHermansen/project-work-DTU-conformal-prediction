@@ -28,11 +28,13 @@ def barplot(xtick_labels, heights, labels, figsize = None):
     plt.xticks(xticks + barWidth*(n_labels-1)/2, xtick_labels, ha="right")
     return fig, ax
 
-def scatter_y_on_pcs(X_pca, y, pc1: int = 0, pc2: int = 1, ax: plt.Axes = None):
+def scatter(axis_data, color_data, feature1: int = 0, feature2: int = 1,
+           alpha: float = 0.1, adapt_lim_level = 1.0, adapt_lim_n_std = 0.5, s = 3):
 
-    ax_ = plt if ax == None else ax
-    ax_.scatter(X_pca[:,pc1],X_pca[:,pc2], edgecolors='none', s=3, alpha=0.1,c=y)
-    ax_.colorbar()
-    ax_.title('y on first two PCs')
-    if ax == None: plt.show()
-    
+    plt.scatter(axis_data[:,feature1],axis_data[:,feature2], edgecolors='none', s=s, alpha=alpha,c=color_data)
+    plt.colorbar()
+    if adapt_lim_level != 1.0: plt.clim(compute_lim(color_data, adapt_lim_level, adapt_lim_n_std))
+
+def compute_lim(array, level = 0.005, n_std = 0.5):
+    return np.quantile(array, [level/2,1-level/2]) + n_std*np.std(array)*np.array([-1,1])
+

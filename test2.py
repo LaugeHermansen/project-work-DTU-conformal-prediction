@@ -1,35 +1,28 @@
-import pickle
-from dataclasses import dataclass
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
-from CP.Classification_softmax import ClassificationSoftmax
-import pandas as pd
 
-@dataclass
-class Data:
-    a: str
-    b: int
+def binary_search(cdf, i=0, j=None):
+    """
+    return the index of the first score where
+    cdf >= self.alpha using binary search
+    """
+    j = len(cdf) if j == None else j
+    m = int((i+j)/2)
+    if i == j:  return i
+    if cdf[m] < 1-alpha:   return binary_search(cdf, m+1, j)
+    elif cdf[m] > 1-alpha: return binary_search(cdf, i, m)
+    else: return m
 
+def baseline(cdf):
+    for i,v in enumerate(cdf):
+        if v >= 1-alpha:
+            return i
+    return len(cdf) + 1
 
-d = Data(2,4)
-
-print(type(d.a))
-
-
-model = RandomForestClassifier()
-
-X = np.random.rand(100,4)
-y = np.random.randint(0,4,100)
-
-model.fit(X,y)
-
-cp_model = ClassificationSoftmax(model, X, y, 0.10, 'predict_proba')
-
-pd.to_pickle(cp_model, '7.pkl')
+alpha = 0.19
 
 
+cdf_raw = np.random.uniform(0, 0.8, 100000)
+cdf = np.sort(cdf_raw)
 
-
-
-
+print(baseline(cdf))
+print(binary_search(cdf))
