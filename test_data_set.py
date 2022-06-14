@@ -8,7 +8,9 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from CP import ClassificationSoftmax, ClassificationCumulativeSoftmax
+from Toolbox.kernels import KNN_mahalnobis, KNN, squared_exponential
 from Toolbox.plot_helpers import barplot, compute_barplot_data
+from Toolbox.tools import get_all_cp_models, multiple_split
 
 
 #%% Load and preprocess data (remove "?" and " ?" and one hot encode)
@@ -55,8 +57,7 @@ lenc.fit(y)
 y = lenc.transform(y)
 
 #Split data sets (train, cal, test)
-train_X, temp_X, train_y, temp_y = train_test_split(X, y, test_size=0.5, stratify=y)
-cal_X, test_X, cal_y, test_y = train_test_split(temp_X, temp_y, test_size=0.5, stratify=temp_y)
+train_X, cal_X, test_X, train_y, cal_y, test_y = multiple_split((0.2,0.3,0.5), X,y, keep_frac = 0.3)
 
 #%% Train underlying model 
 # model = LogisticRegression(C=4, max_iter=1000, n_jobs=4)
@@ -71,54 +72,75 @@ print(model.score(test_X, test_y))
 
 #%% CP with ClassificationSoftmax
 # fit 
-CPmodelSoftmax = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba')
+CPmodelSoftmax1 = ClassificationSoftmax(model, cal_X, cal_y, 0.2, 'predict_proba')
+# CPmodelSoftmax2 = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba', kernel = KNN_mahalnobis(10), verbose = True)
+# CPmodelSoftmax3 = ClassificationSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba', kernel = KNN(10), verbose = True)
+CPmodelSoftmax4 = ClassificationSoftmax(model, cal_X, cal_y, 0.2, 'predict_proba', kernel = squared_exponential(10000), verbose = True)
+# CPmodelCumulativeSoftmax = ClassificationCumulativeSoftmax(model, cal_X, cal_y, 0.05, 'predict_proba')
 
+cp_models = get_all_cp_models(locals())
 # empirical coverage
-print(CPmodelSoftmax.evaluate_coverage(test_X, test_y))
+results = [cp_model.evaluate_coverage(test_X, test_y) for cp_model in cp_models]
 
-# Barplot of prediction set sizes
-plt.bar(*compute_barplot_data(np.sum(CPmodelSoftmax.predict(test_X),axis = 1)))
-plt.show()
+for result in results:
 
-preds = model.predict(test_X)
-mask = preds == test_y
+    # Barplot of prediction set sizes
+    plt.bar(*compute_barplot_data(result.pred_set_sizes))
+    plt.show()
 
-print("Coverage on correct preds: ", CPmodelSoftmax.evaluate_coverage(test_X[mask], test_y[mask]))
-print("Coverage on wrong preds: ", CPmodelSoftmax.evaluate_coverage(test_X[~mask], test_y[~mask]))
+    preds = model.predict(test_X)
+    mask = preds == test_y
+
+    print("Coverage on correct preds: ", np.mean(result.in_pred_set[mask]))
+    print("Coverage on wrong preds: ", np.mean(result.in_pred_set[~mask]))
+    print("sample size", result.mean_effective_sample_size)
 
 
 #%% CP with Classification cumulative soft max 
 # fit 
-CPmodelCumulativeSoftmax = ClassificationCumulativeSoftmax(model, cal_X, cal_y, 0.05)
+# CPmodelCumulativeSoftmax = ClassificationCumulativeSoftmax(model, cal_X, cal_y, 0.05)
 
-# empirical coverage
-print(CPmodelCumulativeSoftmax.evaluate_coverage(test_X, test_y))
-# Barplot of prediction set sizes
-plt.bar(*compute_barplot_data(np.sum(CPmodelCumulativeSoftmax.predict(test_X),axis = 1)))
-plt.show()
+# # empirical coverage
+# print(CPmodelCumulativeSoftmax.evaluate_coverage(test_X, test_y))
+# # Barplot of prediction set sizes
+# plt.bar(*compute_barplot_data(np.sum(CPmodelCumulativeSoftmax.predict(test_X),axis = 1)))
+# plt.show()
 
-preds = model.predict(test_X)
-mask = preds == test_y
+# preds = model.predict(test_X)
+# mask = preds == test_y
 
-print("Coverage on correct preds: ", CPmodelCumulativeSoftmax.evaluate_coverage(test_X[mask], test_y[mask]))
-print("Coverage on wrong preds:   ", CPmodelCumulativeSoftmax.evaluate_coverage(test_X[~mask], test_y[~mask]))
+# print("Coverage on correct preds: ", CPmodelCumulativeSoftmax.evaluate_coverage(test_X[mask], test_y[mask]))
+# print("Coverage on wrong preds:   ", CPmodelCumulativeSoftmax.evaluate_coverage(test_X[~mask], test_y[~mask]))
 
 #%%
 
 
-bar1 = []
-bar2 = []
-for y in set(test_y):
-    mask = test_y == y
-    bar1.append((y, CPmodelSoftmax.evaluate_coverage(test_X[mask], test_y[mask])))
-    bar2.append((y, CPmodelCumulativeSoftmax.evaluate_coverage(test_X[mask], test_y[mask])))
+bars = []
+labels = []
+heights = []
 
-labels1, heights1 = zip(*bar1)
-labels2, heights2 = zip(*bar2)
+for result in results:
+    bars.append([].copy())
+    for y in set(test_y):
+        mask = test_y == y
+        bars[-1].append((y, np.mean(result.in_pred_set[mask])))
+    l,h = zip(*bars[-1])
+    labels.append(l)
+    heights.append(h)
+
+# for y in set(test_y):
+#     mask = test_y == y
+#     for i in range(len(bars)):
+#         bars[i].append((y, np.mean(result[i].in_pred_set[mask])))
 
 
-fig, ax = barplot(lenc.inverse_transform(labels1), (heights1, heights2),#, he4),
-("coverage", "coverage adaptive"), (14,5))
+# labels1, heights1 = zip(*bar1)
+# labels2, heights2 = zip(*bar2)
+
+
+fig, ax = barplot(lenc.inverse_transform(labels[0]), tuple(heights),
+tuple([res.cp_model.name for res in results]), (14,5))
+
 plt.xticks(rotation = 45, fontsize = 20)
 plt.yticks(fontsize = 20)
 plt.xlabel("Classes", fontsize = 23)
@@ -126,3 +148,26 @@ plt.legend(fontsize = 14, loc='center left', bbox_to_anchor=(1,0.5))
 fig.suptitle("Empirical coverage distributed over true labels", fontsize = 30)
 fig.tight_layout()
 plt.show()
+
+
+
+# bar1 = []
+# bar2 = []
+# for y in set(test_y):
+#     mask = test_y == y
+#     bar1.append((y, CPmodelSoftmax.evaluate_coverage(test_X[mask], test_y[mask])))
+#     bar2.append((y, CPmodelCumulativeSoftmax.evaluate_coverage(test_X[mask], test_y[mask])))
+
+# labels1, heights1 = zip(*bar1)
+# labels2, heights2 = zip(*bar2)
+
+
+# fig, ax = barplot(lenc.inverse_transform(labels1), (heights1, heights2),#, he4),
+# ("coverage", "coverage adaptive"), (14,5))
+# plt.xticks(rotation = 45, fontsize = 20)
+# plt.yticks(fontsize = 20)
+# plt.xlabel("Classes", fontsize = 23)
+# plt.legend(fontsize = 14, loc='center left', bbox_to_anchor=(1,0.5))
+# fig.suptitle("Empirical coverage distributed over true labels", fontsize = 30)
+# fig.tight_layout()
+# plt.show()

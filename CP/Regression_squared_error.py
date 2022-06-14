@@ -1,9 +1,7 @@
-from .Regression_adaptive_base import RegressionAdaptiveBase
+from .Regression_base import RegressionBase
 import numpy as np
-import matplotlib.pyplot as plt
 
-
-class RegressionAdaptiveSquaredError(RegressionAdaptiveBase):
+class RegressionSquaredError(RegressionBase):
 
     def score_distribution(self):
         """
@@ -31,8 +29,9 @@ class RegressionAdaptiveSquaredError(RegressionAdaptiveBase):
             
         Returns:
         --------
-            y_pred: the outputs of the regressor
-            pred_interval: the prediction intervals (N_test x 2) matrix
+            y_pred: underlying model prediction or output
+            pred_sets: Prediction sets - one for each test point.
+            effective_sample_sizes: N_text x 1 np.array (returned from self.q)
         """
 
         y_pred = self.model(X)[:,None]

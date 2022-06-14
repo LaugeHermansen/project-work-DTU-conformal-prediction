@@ -38,17 +38,21 @@ class ClassificationSoftmax(ClassificationBase):
     def predict(self, X):
         """
         compute prediction set
-        
+
         Args:
         -----
-            X: NxM matrix with test points
-        
+            X: The new data points
+            
         Returns:
         --------
-            pred_set: boolean array Nxc, where c is number of classes, such that pred_set[i,j] = True iff y_j \in Tau(X_i)
+            y_pred: underlying model prediction or output
+            pred_sets: Prediction sets - one for each test point.
+            effective_sample_sizes: N_text x 1 np.array (returned from self.q)
         """
         scores = self.score(X)
-        return scores <= self.q
+        y_pred = np.argmax(self.model(X), axis = 1)
+        q, effective_sample_sizes = self.q(X)
+        return y_pred, scores <= q[:,None], effective_sample_sizes
 
 
 

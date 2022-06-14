@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 
 from Models import MultipleQuantileRegressor
-from CP import RegressionAdaptiveSquaredError, RegressionAdaptiveQuantile
+from CP import RegressionSquaredError, RegressionQuantile
 
 from Toolbox.tools import multiple_split
 from Toolbox.kernels import mahalanobis_sqe, squared_exponential
@@ -163,17 +163,17 @@ model_names = ["linear", "linear squared", "quantile regression", "quantile regr
 X_cali_squard = np.hstack((X_cali, X_cali**2))
 X_test_squard = np.hstack((X_test, X_test**2))
 
-cp_static_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
-cp_static_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
+cp_static_lm = RegressionSquaredError(lm, X_cali, y_cali, alpha,  verbose=True)
+cp_static_lm_squared = RegressionSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_lm = RegressionAdaptiveSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-cp_anobis_lm_squared = RegressionAdaptiveSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_lm = RegressionSquaredError(lm, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_lm_squared = RegressionSquaredError(lm_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
-cp_static_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
-cp_static_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
+cp_static_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  verbose=True)
+cp_static_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  verbose=True)
 
-cp_anobis_qr = RegressionAdaptiveQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
-cp_anobis_qr_squared = RegressionAdaptiveQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_qr = RegressionQuantile(qr, X_cali, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
+cp_anobis_qr_squared = RegressionQuantile(qr_squared, X_cali_squard, y_cali, alpha,  kernel = squared_exponential(0.1), verbose=True)
 
 cp_models = [cp_static_lm, cp_anobis_lm, cp_static_qr, cp_anobis_qr]
 cp_model_names = ["Linear Regression", "Linear Regression Adaptive", "Quantile Regression", "Quantile Regression Adaptive"]
