@@ -30,6 +30,9 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
         q, effective_sample_sizes = self.q(X)
         pred_set_test = scores <= q[:, None]
 
+
+        return y_pred, pred_set_test, effective_sample_sizes
+
         scores_idx = np.argsort(scores, axis = 1)
         pred_sets = np.zeros_like(scores).astype(bool)
         for i in range(len(scores)):
