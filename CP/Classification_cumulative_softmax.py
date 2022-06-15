@@ -30,18 +30,18 @@ class ClassificationCumulativeSoftmax(ClassificationBase):
         q, effective_sample_sizes = self.q(X)
         pred_set_test = scores <= q[:, None]
 
-        scores_idx = np.argsort(scores, axis = 1)
-        pred_sets = np.zeros_like(scores).astype(bool)
-        for i in range(len(scores)):
-            for j in scores_idx[i]:
-                pred_sets[i,j] = True
-                if scores[i,j] >= q[i]: break
+        # scores_idx = np.argsort(scores, axis = 1)
+        # pred_sets = np.zeros_like(scores).astype(bool)
+        # for i in range(len(scores)):
+        #     for j in scores_idx[i]:
+        #         pred_sets[i,j] = True
+        #         if scores[i,j] >= q[i]: break
 
-        diff = np.sum(pred_sets, axis = 1) - np.sum(pred_set_test, axis = 1)
+        # diff = np.sum(pred_sets, axis = 1) - np.sum(pred_set_test, axis = 1)
 
         # data = compute_barplot_data(diff)
 
-        return y_pred, pred_sets, effective_sample_sizes
+        return y_pred, pred_set_test, effective_sample_sizes
 
     def score_distribution(self):
         """

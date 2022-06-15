@@ -58,6 +58,7 @@ if __name__ == '__main__':
     plot_letters(6, calibration_dl)
 
     model = CNN_class(*hyperparameter[2:])
+    print(hyperparameter) 
     model.load_state_dict(torch.load('bayesian_optimization_best_model.pt'))
 
     model1 = lambda x: torch.nn.functional.softmax(model(torch.permute(x, (0,1,3,2))), dim=1).detach().numpy()
