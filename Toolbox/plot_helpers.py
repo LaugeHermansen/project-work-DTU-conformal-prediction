@@ -14,18 +14,15 @@ def compute_barplot_data(array):
     return np.array(attributes)[mask].astype(str), np.array(heights)[mask]
 
 
-def barplot(xtick_labels, heights, labels, figsize = None):
-    if not len(labels) == len(heights):
-        raise ValueError('Number of labels must equal number of height arrays')
+def barplot(heights, labels, figsize = None):
 
-    xticks = np.arange(len(xtick_labels))
     n_labels = len(labels)
 
     barWidth = 1/(n_labels + 1)
     fig, ax = plt.subplots(figsize = figsize)
     for i, label, height in zip(range(n_labels), labels, heights):
-        plt.bar(xticks + barWidth*i, height, width = barWidth, label = label)
-    plt.xticks(xticks + barWidth*(n_labels-1)/2, xtick_labels, ha="right")
+        plt.bar(label + barWidth*i, height, width = barWidth, label = label)
+    plt.xticks(label + barWidth*(n_labels-1)/2, label, ha="right")
     return fig, ax
 
 def scatter(axis_data, color_data, feature1: int = 0, feature2: int = 1,
@@ -37,4 +34,3 @@ def scatter(axis_data, color_data, feature1: int = 0, feature2: int = 1,
 
 def compute_lim(array, level = 0.005, n_std = 0.5):
     return np.quantile(array, [level/2,1-level/2]) + n_std*np.std(array)*np.array([-1,1])
-
