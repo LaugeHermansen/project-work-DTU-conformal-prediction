@@ -71,7 +71,7 @@ def get_all_cp_models(locals):
     return [b for b in locals.values() if inspect.isclass(b.__class__) and not inspect.isclass(b) and '<CP.' == repr(b)[:4]]
 
 
-def stratified_coverage(feature_samples: np.ndarray, in_pred_set: np.ndarray, n_features: int = None):
+def stratified_coverage(feature_samples: np.ndarray, in_pred_set: np.ndarray, n_features: int = None, equal_mass = False, global_min_x = 0., global_max_x = 1.):
 
     """
     Compute either FSC or MSC, depending on the input, `feature_samples`
@@ -108,15 +108,27 @@ def stratified_coverage(feature_samples: np.ndarray, in_pred_set: np.ndarray, n_
     temp_feature_coverage = defaultdict(list)
 
     if n_features != None:
-        label_lookup = {}
-        classes_size = len(feature_samples)/n_features
-        label_samples = np.zeros(len(feature_samples)).astype(str)
-        mask = np.argsort(feature_samples)
-        for label in range(n_features):
-            start = np.ceil(classes_size*label).astype(int)
-            stop = np.ceil(classes_size*(label+1)).astype(int)
-            label_samples[mask[start:stop]] = str(label)
-            label_lookup[str(label)] = f"({feature_samples[mask[start]]:.3} ,  {feature_samples[mask[min(stop, len(mask)-1)]]:.3}("
+        if equal_mass == True:
+            label_lookup = {}
+            classes_size = len(feature_samples)/n_features
+            label_samples = np.zeros(len(feature_samples)).astype(str)
+            mask = np.argsort(feature_samples)
+            for label in range(n_features):
+                start = np.ceil(classes_size*label).astype(int)
+                stop = np.ceil(classes_size*(label+1)).astype(int)
+                label_samples[mask[start:stop]] = str(label)
+                label_lookup[str(label)] = f"[{feature_samples[mask[start]]:.3} ,  {feature_samples[mask[min(stop, len(mask)-1)]]:.3}["
+        else:
+            label_lookup = {}
+            classes_length = (global_max_x - global_min_x)/n_features
+            label_samples = np.zeros(len(feature_samples)).astype(str)
+            for label in range(n_features):
+                min_x = global_min_x + label*classes_length
+                max_x = global_min_x + (label+1)*classes_length
+                mask = (feature_samples >= min_x) & (feature_samples < max_x)
+                label_samples[mask] = str(label)
+                label_lookup[str(label)] = f"[{np.min(feature_samples[mask]):.3} ,  {np.max(feature_samples[mask]):.3}]"
+           
     else:
         label_samples = feature_samples.copy().astype(str)
         label_lookup = {i:i for i in set(label_samples)}

@@ -21,6 +21,9 @@ from Toolbox.kernels import mahalanobis_KNN, KNN, exponential
 from Toolbox.plot_helpers import barplot, compute_barplot_data
 from Toolbox.tools import get_all_cp_models, multiple_split
 #plt.rcParams['text.usetex'] = True
+import random 
+random.seed(42)
+np.random.seed(42)
 
 class Classification_Wrapper():
     # makes the predict_proba method the call methods so it can be used with the rest of the framework
@@ -116,7 +119,8 @@ train_X, cal_X, test_X, train_y, cal_y, test_y = multiple_split((0.2,0.3,0.5), X
 
 
 #%% load models 
-model = RandomForestClassifier(n_estimators=500, n_jobs = 6)
+# model = RandomForestClassifier(n_estimators=500, n_jobs = 6)
+model = RandomForestClassifier(n_estimators=50, n_jobs = 4)
 model.fit(train_X, train_y)
 print(model.score(train_X, train_y))
 print(model.score(test_X, test_y))
@@ -187,16 +191,31 @@ output = pickle.load(results_adult_file)
 # plt.clf()
 
 # All three prediction sets in one plot 
-plt.bar(*compute_barplot_data(np.hstack(results_adult["model pred sizes"])), alpha=0.5, legend="Cumulative softmax > 1 - alpha")
+plt.figure(figsize=(26, 18), dpi=200)
+plt.rc("font", size=28)
+plt.plot(*compute_barplot_data(np.hstack(results_adult["model pred sizes"])), "-o", linewidth=7, markersize=12, alpha=0.5, color="r", label="Cumulative model probability")
 
 # CP softmax prediction sizes 
-plt.bar(*compute_barplot_data(np.hstack(results_adult["CP softmax pred sizes"])), alpha=0.5, legend="Normal CP")
+plt.plot(*compute_barplot_data(np.hstack(results_adult["CP softmax pred sizes"])), "-o", linewidth=7, markersize=12, alpha=0.5, color="b", label="Normal CP")
 
 # CP cumulative sum prediction sizes 
-plt.bar(*compute_barplot_data(np.hstack(results_adult["CP cumulative pred sizes"])), alpha=0.5, legend="Adaptive CP")
-plt.title("Prediction set sizes") 
-plt.savefig("./results/adult/pred_set_sizes")
+plt.plot(*compute_barplot_data(np.hstack(results_adult["CP cumulative pred sizes"])), "-o", linewidth=7, markersize=12, alpha=0.5, color="y", label="Adaptive CP")
+plt.title("Prediction Set Sizes") 
+plt.xlabel("Prediction set sizes")
+plt.ylabel("Volume")
 plt.legend()
+plt.savefig("./results/adult/pred_set_sizesYoink")
+plt.clf()
+
+plt.figure(figsize=(26, 18), dpi=200)
+plt.rc("font", size=28)
+label2, h2 = compute_barplot_data(np.hstack(results_adult["model pred sizes"]))
+label1, h1 = compute_barplot_data(np.hstack(results_adult["CP softmax pred sizes"]))
+label3, h3 = compute_barplot_data(np.hstack(results_adult["CP cumulative pred sizes"]))
+barplot([h1, h2, h3], labels=[label1, label2, label3], legend=["Normal CP", "Cumulative model probability", "Adaptive CP"])
+plt.title("Prediction set sizes") 
+plt.legend()
+plt.savefig("./results/adult/pred_set_sizes")
 plt.clf()
 
 # Print easily distuingishable statistics 
@@ -208,4 +227,5 @@ print(f"Random Forest empirical coverage : {np.mean(results_adult['model empiric
 print(f"Normal CP empirical coverage : {np.mean(results_adult['CP softmax empirical coverage'])}")
 print(f"Adaptive CP empirical coverage : {np.mean(results_adult['CP cumulative empirical coverage'])}")
 
+print(f"Random Forest average accuracy : {np.mean(results_adult['model accuracy'])}")
 # %%

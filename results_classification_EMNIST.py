@@ -203,49 +203,87 @@ results_EMNIST_file.close()
 # Show the results 
 
 results_EMNIST_file = open("./results/EMNIST/results_EMNIST.pkl", "rb")
-output = pickle.load(results_EMNIST_file)
+results_EMNIST = pickle.load(results_EMNIST_file)
 
-# Prediction sizes 
-plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["model pred sizes"])))
-plt.title("Prediction sizes with cumulative softmax > 1 - alpha") 
-plt.savefig("./results/EMNIST/model_pred_sizes")
+#V2 
+plt.figure(figsize=(26, 18), dpi=200)
+plt.rc("font", size=28)
+# Model pred sizes 
+plt.plot(*compute_barplot_data(np.hstack(results_EMNIST["model pred sizes"])), "-o", alpha=0.5, linewidth=7, markersize=12, color="r", label="Cumulative model probability")
+# CP softmax prediction sizes 
+plt.plot(*compute_barplot_data(np.hstack(results_EMNIST["CP softmax pred sizes"])), "-o", alpha=0.5, linewidth=7, markersize=12, color="b", label="Normal CP")
+# CP cumulative sum prediction sizes 
+plt.plot(*compute_barplot_data(np.hstack(results_EMNIST["CP cumulative pred sizes"])), "-o", alpha=0.5, linewidth=7, markersize=12, color="y", label="Adaptive CP")
+
+plt.title("Prediction Set Sizes") 
+plt.xlabel("Prediction set sizes")
+plt.ylabel("Volume")
+plt.legend()
+plt.savefig("./results/EMNIST/pred_set_sizesYoink")
 plt.clf()
+
+# Plot the three histograms together 
+def plot_histogram(data, colors, legends, title, trans=0.5, bins=20):
+    for i, d in enumerate(data): 
+        plt.hist(d, bins, density=True, alpha=trans, label=legends[i], color=colors[i])
+    plt.legend()
+    plt.title(title)
+    plt.xlabel("Empirical Coverage")
+    plt.ylabel("Density")
+
+plt.figure(figsize=(26, 18), dpi=200)
+plt.rc("font", size=28)
+plot_histogram([results_EMNIST["model empirical coverage"], results_EMNIST["CP softmax empirical coverage"], results_EMNIST["CP cumulative empirical coverage"]],
+["r", "y", "b"], ["Cumulative Model Probability", "Normal CP", "Adaptive CP"], "Distribution for Empirical Coverage")
+plt.savefig("./results/EMNIST/empirical coverage")
+plt.clf()
+
 
 # Model accuracy 
-plt.bar(*compute_barplot_data(results_EMNIST["model accuracy"]))
-plt.title("Accuracy of the CNN with one output") 
-plt.savefig("./results/EMNIST/model_accuracy")
-plt.clf()
+# plt.bar(*compute_barplot_data(results_EMNIST["model accuracy"]))
+# plt.title("Accuracy of the CNN with one output") 
+# plt.savefig("./results/EMNIST/model_accuracy")
+# plt.xticks(rotation=45)
+# plt.xlabel("CNN accuracy from one class")
+# plt.ylabel("Density")
+# plt.clf()
 
-# Emperical coverage
-plt.bar(*compute_barplot_data(results_EMNIST["model empirical coverage"]))
-plt.title("Empirical coverage of CNN with cumulative softmax sets > 1 - alpha") 
-plt.savefig("./results/EMNIST/model_coverage")
-plt.clf()
+# # Emperical coverage
+# plt.bar(*compute_barplot_data(results_EMNIST["model empirical coverage"]))
+# plt.title("Empirical coverage of CNN with cumulative softmax sets > 1 - alpha") 
+# plt.savefig("./results/EMNIST/model_coverage")
+# plt.clf()
 
-# CP softmax prediction sizes 
-plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["CP softmax pred sizes"])))
-plt.title("Prediction sizes with normal CP") 
-plt.savefig("./results/EMNIST/CP_softmax_sizes")
-plt.clf()
+# # CP softmax emperical coverage
+# plt.bar(*compute_barplot_data(results_EMNIST["CP softmax empirical coverage"]))
+# plt.title("Empirical coverage of normal CP") 
+# plt.savefig("./results/EMNIST/softmax_coverage")
+# plt.clf()
 
-# CP cumulative sum prediction sizes 
-plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["CP cumulative pred sizes"])))
-plt.title("Prediction sizes with adaptive CP") 
-plt.savefig("./results/EMNIST/CP_adaptive_sizes")
-plt.clf()
+# # CP cumulative emperical coverage
+# plt.bar(*compute_barplot_data(results_EMNIST["CP cumulative empirical coverage"]))
+# plt.title("Empirical coverage of adaptive CP") 
+# plt.savefig("./results/EMNIST/adaptive_coverage")
+# plt.clf()
 
-# CP softmax emperical coverage
-plt.bar(*compute_barplot_data(results_EMNIST["CP softmax empirical coverage"]))
-plt.title("Empirical coverage of normal CP") 
-plt.savefig("./results/EMNIST/softmax_coverage")
-plt.clf()
+# # Prediction sizes 
+# plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["model pred sizes"])))
+# plt.title("Prediction sizes with cumulative softmax > 1 - alpha") 
+# plt.savefig("./results/EMNIST/model_pred_sizes")
+# plt.clf()
 
-# CP cumulative emperical coverage
-plt.bar(*compute_barplot_data(results_EMNIST["CP cumulative empirical coverage"]))
-plt.title("Empirical coverage of adaptive CP") 
-plt.savefig("./results/EMNIST/adaptive_coverage")
-plt.clf()
+# # CP softmax prediction sizes 
+# plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["CP softmax pred sizes"])))
+# plt.title("Prediction sizes with normal CP") 
+# plt.savefig("./results/EMNIST/CP_softmax_sizes")
+# plt.clf()
+
+# # CP cumulative sum prediction sizes 
+# plt.bar(*compute_barplot_data(np.hstack(results_EMNIST["CP cumulative pred sizes"])))
+# plt.title("Prediction sizes with adaptive CP") 
+# plt.savefig("./results/EMNIST/CP_adaptive_sizes")
+# plt.clf()
+
 
 # Print easily distuingishable statistics 
 print(f"CNN average pred size : {np.mean(results_EMNIST['model avg size'])}")
@@ -255,3 +293,6 @@ print(f"Adaptive CP average pred size : {np.mean(results_EMNIST['CP cumulative a
 print(f"CNN empirical coverage : {np.mean(results_EMNIST['model empirical coverage'])}")
 print(f"Normal CP empirical coverage : {np.mean(results_EMNIST['CP softmax empirical coverage'])}")
 print(f"Adaptive CP empirical coverage : {np.mean(results_EMNIST['CP cumulative empirical coverage'])}")
+
+print(f"CNN average accuracy : {np.mean(results_EMNIST['model accuracy'])}")
+#%%

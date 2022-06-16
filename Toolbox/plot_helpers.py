@@ -14,7 +14,7 @@ def compute_barplot_data(array):
     return np.array(attributes)[mask], np.array(heights)[mask]
 
 
-def barplot(heights, labels, figsize = None, legend = []):
+def barplot(heights, labels, figsize = None, legend = [], rotation=0):
 
     n_labels = len(labels)
 
@@ -22,7 +22,7 @@ def barplot(heights, labels, figsize = None, legend = []):
     fig, ax = plt.subplots(figsize = figsize)
     for i, label, height in zip(range(n_labels), labels, heights):
         plt.bar(label + barWidth*i, height, width = barWidth, label = legend[i])
-    plt.xticks(label + barWidth*(n_labels-1)/2, label, ha="right")
+    plt.xticks(label + barWidth*(n_labels-1)/2, label, ha="right", rotation=rotation)
     return fig, ax
 
 def scatter(axis_data, color_data, feature1: int = 0, feature2: int = 1,

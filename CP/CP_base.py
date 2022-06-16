@@ -204,6 +204,7 @@ class Base():
                 kernel_values = np.ones_like(kernel_values_raw)
                 kernel_values_cum_sum = np.cumsum(kernel_values)
                 effective_sample_sizes.append(None)
+                norm_constant = 1
             #otherwize
             else:
                 norm_constant = 1/max(kernel_values_raw)*1e2
@@ -212,6 +213,8 @@ class Base():
                 if np.sum(kernel_values**2) == 0:
                     raise ValueError('Something went completely wrong with that kernel - all weights sum to 0')
                 effective_sample_sizes.append(np.sum(kernel_values)**2/np.sum(kernel_values**2))
+            
+            # cdf = kernel_values_cum_sum/(kernel_values_cum_sum[-1])#
             cdf = kernel_values_cum_sum/(kernel_values_cum_sum[-1]+1*norm_constant)
             
             # WARN: Theoretically should return a quantile of infinity if the 1-alpha quantile is 
