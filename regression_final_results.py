@@ -316,8 +316,9 @@ for dataset in datasets:
             plot_model(models[model_n][feature_n], X_grid, get_features[feature_n], caption=f"{model_names[model_n]}", color="k", coverage=print_coverage, X_test=X_test, y_test=y_test)
             if show_test: 
                 plt.plot(X_test, y_test, dot_style, alpha=test_a, color=test_col)
-            if show_cali: 
-                plt.plot(X_cali, y_cali, dot_style, alpha=cali_a, color=cali_col)
+            plt.plot(X, y_train, dot_style, alpha=train_a, color=train_col)
+            # if show_cali: 
+            #     plt.plot(X_cali, y_cali, dot_style, alpha=cali_a, color=cali_col)
             #plt.title(f"{model_names[model_n]}")
             
             # Plot all different CP kernels applied

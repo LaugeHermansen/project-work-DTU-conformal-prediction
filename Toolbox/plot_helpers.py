@@ -11,7 +11,7 @@ def compute_barplot_data(array):
     attributes, heights = tuple(zip(*list(temp.items())))
     mask = np.argsort(attributes)
     
-    return np.array(attributes)[mask].astype(str), np.array(heights)[mask]
+    return np.array(attributes)[mask], np.array(heights)[mask]
 
 
 def barplot(heights, labels, figsize = None):

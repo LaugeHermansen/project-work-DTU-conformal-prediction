@@ -95,7 +95,7 @@ class Coverage_Wrapper():
         self.alpha = self.model.alpha 
 
     def __call__(self, X):
-        predictions = model(X)
+        predictions = self.model(X)
         indices = np.argsort(-predictions, axis=1)
         reverse_indices = np.argsort(indices, axis=1)
         sorted = np.take_along_axis(predictions, indices, axis=1)
