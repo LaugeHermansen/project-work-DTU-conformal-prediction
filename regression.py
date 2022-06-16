@@ -14,7 +14,7 @@ from Models import MultipleQuantileRegressor
 from CP import RegressionSquaredError, RegressionQuantile
 
 
-from Toolbox.plot_helpers import barplot, scatter_y_on_pcs
+from Toolbox.plot_helpers import barplot, scatter, compute_lim
 from Toolbox.kernels import mahalanobis_exponential, exponential, KNN, mahalanobis_KNN
 from Toolbox.tools import get_all_cp_models, multiple_split, stratified_coverage
 
@@ -33,8 +33,12 @@ X_pca = pca.fit_transform(X_standard)
 
 train_X, cal_X, test_X, train_y, cal_y, test_y, train_strat, cal_strat, test_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.3)
 
-scatter_y_on_pcs(X_pca, y, alpha = 1)
-scatter_y_on_pcs(X_standard, y, alpha = 1)
+scatter(X_pca, y, alpha = 0.6)
+plt.title("$y_{true}$ on PCs")
+plt.show()
+scatter(X_standard, y, alpha = 0.6)
+plt.title("$y_{true}$ on standardized X")
+plt.show()
 
 #%%
 
@@ -73,7 +77,8 @@ rf.fit(train_X, train_y)
 # cplm_ad_KNN = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
 # cplm_ex    =   RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = exponential(5), verbose = True)
 # cplm_      =   RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cprf_ex    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = exponential(2), verbose = True)
+cprf_ex    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = exponential(0.2), verbose = True)
+# cprf_knn    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = KNN(100), verbose = True)
 cprf_      =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict')
 # cplm_st = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
 # cpqr_exp =      RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = exponential(1.5), verbose = True)
@@ -82,7 +87,6 @@ cprf_      =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict')
 # cpqr_maha_KNN = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_KNN(50), verbose = True)
 # cpqr_st =       RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
 
-#%%()
 
 
 # Evaluate cp models
@@ -140,9 +144,12 @@ plt.show()
 
 #%%
 
-plot_alpha = 0.4
+plot_alpha = 1
+s = 3
+lim_level = 0.005
 
 for result in cp_results:
+    plt.figure(figsize = (10,10), dpi = 300)
     ax1 = plt.subplot2grid((4, 5), (0, 0), rowspan=2, colspan=2)
     ax1.plot(
         test_y, 
@@ -150,9 +157,10 @@ for result in cp_results:
         '.', 
         alpha = plot_alpha
     )
-    ax1.set_title("pred set size vs y_true")
+    ax1.set_title("Prediction set set size vs $y_{true}$")
     ax1.set_xlabel("True label, $y_{true}$")
     ax1.set_ylabel(r"Prediction set size $|\tau(X)|$")
+    ax1.set_ylim(compute_lim(result.pred_set_sizes, lim_level))
 
     ax2 = plt.subplot2grid((4, 5), (2, 0), rowspan=2, colspan=2)
     ax2.plot(
@@ -161,32 +169,44 @@ for result in cp_results:
         '.', 
         alpha = plot_alpha
     )
-    ax2.set_title("pred set size vs true absolute difference")
+    ax2.set_title("Prediction set size vs true absolute difference")
     ax2.set_xlabel("$|y_{pred}-y_{true}$|")
     ax2.set_ylabel(r"Prediction set size $|\tau(X)|$")
-    ax2.set_ylim(12,15)
+    ax2.set_ylim(compute_lim(result.pred_set_sizes, lim_level))
 
     # plt.show()
     # continue
 
-    ax3 = plt.subplot2grid((4, 5), (0, 2), rowspan=4, colspan=3)
-    plt.scatter(
-        test_X_pca[:,0],
-        test_X_pca[:,1],
-        edgecolors='none',
-        s=6, 
-        alpha = plot_alpha,
-        c=result.pred_set_sizes
-    )
-    plt.colorbar()
+    ax3 = plt.subplot2grid((4, 5), (0, 2), rowspan=2, colspan=3)
+    quantity = result.pred_set_sizes
+    scatter(test_X_pca, quantity, adapt_lim_level=lim_level, alpha=plot_alpha, s=s)
     ax3.set_title('pred set sizes on first two PCs')
     ax3.set_xlabel("PC 1")
     ax3.set_ylabel("PC 2")
     ax3.plot()
     plt.suptitle(result.cp_model_name, fontsize = 15)
+
     plt.tight_layout()
+
+    ax4 = plt.subplot2grid((4, 5), (2, 2), rowspan=2, colspan=3)
+    quantity = np.abs(result.y_preds - test_y)
+    scatter(test_X_pca, quantity, adapt_lim_level=lim_level, alpha=plot_alpha, s=s)
+    ax4.set_title('Squared error on first two PCs')
+    ax4.set_xlabel("PC 1")
+    ax4.set_ylabel("PC 2")
+    ax4.plot()
+    plt.suptitle(result.cp_model_name, fontsize = 15)
     plt.show()
-    
+
+
+
+
+
+
+
+
+
+
     # Plot adaptive coverage for linear regression
     
     # plt.plot(test_y, pred_intervals_ad[:,1] - pred_intervals_ad[:,0], '.', alpha = 0.05)
