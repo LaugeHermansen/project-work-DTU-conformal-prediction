@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
 from Toolbox.tools import multiple_split
 from Toolbox.kernels import mahalanobis_exponential, exponential
-from scipy.stats import t, norm
+from scipy.stats import t, norm, betabinom
 import os 
 #plt.rcParams['text.usetex'] = True
 
@@ -299,7 +299,7 @@ datasets = [[y_homosedatic, y_homosedatic_cali, y_homosedatic_test, "Homoscedast
             [y_hetrosedatic, y_hetrosedatic_cali, y_hetrosedatic_test, "Heteroscedastic"], 
             [y_discontinuous, y_discontinuous_cali, y_discontinuous_test, "Discontinuous"]]
 
-# 
+#
 
 
 for dataset in datasets: 
@@ -449,6 +449,12 @@ for dataset_n, dataset in enumerate(coverage):
             legends = ["Without CP"]
             legends.extend(kernel_names)
             plot_histogram(model, colors=colors, legends=legends, title=title)
+            min_x = np.min(model)
+            max_x = np.max(model)
+            x = np.arange(int(min_x*test), int(max_x*test))
+            a = np.ceil((1-alpha)*(cali + 1))
+            b = np.floor((alpha*(1+cali)))
+            plt.plot(x/test, test*betabinom.pmf(x, test, a, b), '-', linewidth=8, label='betabinom pmf')
             plt.tight_layout()
             plt.savefig(f"./results/final_toy_data/coverage_histograms/{title}")
             plt.clf()

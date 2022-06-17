@@ -115,7 +115,7 @@ lenc.fit(y)
 y = lenc.transform(y)
 
 #Split data sets (train, cal, test)
-train_X, cal_X, test_X, train_y, cal_y, test_y = multiple_split((0.2,0.3,0.5), X,y, keep_frac = 0.3)
+train_X, cal_X, test_X, train_y, cal_y, test_y = multiple_split((0.2,0.3,0.5), X,y)
 
 
 #%% load models 

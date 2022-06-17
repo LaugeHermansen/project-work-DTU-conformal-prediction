@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 
 from Toolbox.tools import multiple_split, stratified_coverage
 from Toolbox.kernels import mahalanobis_exponential, exponential, squared_exponential
-from scipy.stats import norm
+from scipy.stats import norm, betabinom
 import os 
 from tqdm import tqdm
 #plt.rcParams['text.usetex'] = True
@@ -477,9 +477,19 @@ for dataset_n, dataset in enumerate(coverage):
             plt.figure(figsize=(26, 18), dpi=200)
             plt.rc("font", size=28)
             plot_histogram(model, colors=colors, legends=legends, title=title)
+            
+            min_x = np.min(model)
+            max_x = np.max(model)
+            x = np.arange(int(min_x*test), int(max_x*test))
+            a = np.ceil((1-alpha)*(cali + 1))
+            b = np.floor((alpha*(1+cali)))
+            plt.plot(x/test, test*betabinom.pmf(x, test, a, b), '-', linewidth=8, label='betabinom pmf')
+            # plt.vlines(x, 0, betabinom.pmf(x, test, a, b), colors='b', lw=5, alpha=0.5)
+            
             plt.tight_layout()
             plt.savefig(f"./results/david_leger/coverage_histograms/{title}")
             plt.clf()
+            
 
 #%% Plot dataset conditional coverage
 
@@ -509,3 +519,17 @@ for dataset_n, dataset in enumerate(conditional_coverage):
             plt.clf()
 
 #%%
+datasets = [[None, None, None, "Homoscedastic"], 
+            [None, None, None, "Heteroscedastic"], 
+            [None, None, None, "Discontinuous"]]
+
+#%%
+
+a = np.ceil((1-alpha)*(cali + 1))
+b = np.floor((alpha*(1+cali)))
+x = np.arange(int(test*min_x), int(test*max_x))
+
+plt.plot(x, betabinom.pmf(x, test, a, b), '-', ms=8, label='betabinom pmf')
+
+plt.legend(loc='best', frameon=False)
+plt.show()

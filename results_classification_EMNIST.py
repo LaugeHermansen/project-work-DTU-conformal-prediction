@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 #from Toolbox.tools import multiple_split
 #from Toolbox.kernels import mahalanobis_exponential, exponential
-from scipy.stats import norm
+from scipy.stats import norm, betabinom
 import os 
 import pickle
 from Toolbox.plot_helpers import *
@@ -223,7 +223,7 @@ plt.savefig("./results/EMNIST/pred_set_sizesYoink")
 plt.clf()
 
 # Plot the three histograms together 
-def plot_histogram(data, colors, legends, title, trans=0.5, bins=20):
+def plot_histogram(data, colors, legends, title, trans=0.5, bins=14):
     for i, d in enumerate(data): 
         plt.hist(d, bins, density=True, alpha=trans, label=legends[i], color=colors[i])
     plt.legend()
@@ -233,8 +233,16 @@ def plot_histogram(data, colors, legends, title, trans=0.5, bins=20):
 
 plt.figure(figsize=(26, 18), dpi=200)
 plt.rc("font", size=28)
-plot_histogram([results_EMNIST["model empirical coverage"], results_EMNIST["CP softmax empirical coverage"], results_EMNIST["CP cumulative empirical coverage"]],
-["r", "y", "b"], ["Cumulative Model Probability", "Normal CP", "Adaptive CP"], "Distribution for Empirical Coverage")
+data = [results_EMNIST["model empirical coverage"],results_EMNIST["CP softmax empirical coverage"], results_EMNIST["CP cumulative empirical coverage"]]
+
+plot_histogram(data, ["r", "y", "b"], ["Cumulative Model Probability", "Normal CP", "Adaptive CP"], "Distribution for Empirical Coverage")
+min_x = np.min(data)
+max_x = np.max(data)
+x = np.arange(int(min_x*test_points), int(max_x*test_points))
+a = np.ceil((1-alpha)*(cali_points + 1))
+b = np.floor((alpha*(1+cali_points)))
+plt.plot(x/test_points, test_points*betabinom.pmf(x, test_points, a, b), '-', linewidth=8, label='betabinom pmf')
+            
 plt.savefig("./results/EMNIST/empirical coverage")
 plt.clf()
 
