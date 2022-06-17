@@ -61,8 +61,10 @@ class Coverage_Wrapper():
         avg_size = np.mean(pred_sizes)
 
         accuracy = np.mean(pred == y) 
-        empirical_covarage = np.mean([preds[i][y[i]] for i in range(len(y))])
-        return pred_sizes, avg_size, accuracy, empirical_covarage
+        in_pred_set = [preds[i][y[i]] for i in range(len(y))]
+        empirical_covarage = np.mean(in_pred_set)
+        
+        return pred_sizes, avg_size, accuracy, empirical_covarage, in_pred_set
 
 
 if not "results" in os.listdir("."):
@@ -101,7 +103,12 @@ enc.fit(data_X[one_hots])
 encodings = enc.transform(data_X[one_hots])
 
 X = data_X.drop(labels = one_hots, axis = 1).to_numpy()
+non_one_hottet = len(X[0])
+X = X.astype(float)
 X = np.hstack((X, encodings.toarray()))
+mean = np.mean(X, axis = 0) 
+std = np.std(X, axis = 0) + 1e-16
+X = (X - mean)/std 
 
 #Label encode y
 y = data_y.to_numpy().squeeze()
@@ -125,18 +132,23 @@ model.fit(train_X, train_y)
 print(model.score(train_X, train_y))
 print(model.score(test_X, test_y))
 
-
+#%%
 results_adult = {"model pred sizes" : [],
                   "model avg size" : [], 
                   "model accuracy" : [],
                   "model empirical coverage" : [], 
                   "CP softmax pred sizes" : [],
                   "CP cumulative pred sizes" : [], 
+                  "NLCP pred sizes": [],
                   "CP softmax avg size" : [], 
                   "CP cumulative avg size" : [], 
+                  "NLCP avg size" : [],
                   "CP softmax empirical coverage" : [],
-                  "CP cumulative empirical coverage" : [] 
+                  "CP cumulative empirical coverage" : [],
+                  "NLCP empirical coverage" : [] 
 }
+
+#%%
 
 # Create evaluation model 
 evaluate_model = Coverage_Wrapper(model = Classification_Wrapper(model, alpha))
@@ -144,23 +156,31 @@ evaluate_model = Coverage_Wrapper(model = Classification_Wrapper(model, alpha))
 # Apply CP framework 
 CP_softmax = ClassificationSoftmax(Classification_Wrapper(model, alpha), cal_X, cal_y, alpha)
 CP_cumulative = ClassificationCumulativeSoftmax(Classification_Wrapper(model, alpha), cal_X, cal_y, alpha)
+NLCP = ClassificationSoftmax(Classification_Wrapper(model, alpha), cal_X, cal_y, alpha, kernel=KNN(40))
 
 # evaluate model and CP models 
-model_pred_sizes, model_avg_size, model_accuracy, model_empirical_covarage = evaluate_model.eval_coverage(test_X, test_y) 
+model_pred_sizes, model_avg_size, model_accuracy, model_empirical_covarage, model_in_pred_set = evaluate_model.eval_coverage(test_X, test_y) 
 softmax_results = CP_softmax.evaluate_coverage(test_X, test_y) 
 cumulative_results = CP_cumulative.evaluate_coverage(test_X, test_y)
-
+NLCP_results = NLCP.evaluate_coverage(test_X, test_y)
+#%%
 # Save configurations 
 results_adult["model pred sizes"].append(model_pred_sizes)
 results_adult["model avg size"].append(model_avg_size)
 results_adult["model accuracy"].append(model_accuracy)
 results_adult["model empirical coverage"].append(model_empirical_covarage)
+
 results_adult["CP softmax pred sizes"].append(softmax_results.pred_set_sizes)
-results_adult["CP cumulative pred sizes"].append(cumulative_results.pred_set_sizes)
 results_adult["CP softmax avg size"].append(np.mean(softmax_results.pred_set_sizes))
-results_adult["CP cumulative avg size"].append(np.mean(cumulative_results.pred_set_sizes))
 results_adult["CP softmax empirical coverage"].append(softmax_results.empirical_coverage)
+
+results_adult["CP cumulative pred sizes"].append(cumulative_results.pred_set_sizes)
+results_adult["CP cumulative avg size"].append(np.mean(cumulative_results.pred_set_sizes))
 results_adult["CP cumulative empirical coverage"].append(cumulative_results.empirical_coverage)
+
+results_adult["NLCP pred sizes"].append(NLCP_results.pred_set_sizes)
+results_adult["NLCP avg size"].append(np.mean(NLCP_results.pred_set_sizes))
+results_adult["NLCP empirical coverage"].append(NLCP_results.empirical_coverage)
 
 
 results_adult_file = open("./results/adult/results_adult.pkl", "wb")
@@ -200,6 +220,10 @@ plt.plot(*compute_barplot_data(np.hstack(results_adult["CP softmax pred sizes"])
 
 # CP cumulative sum prediction sizes 
 plt.plot(*compute_barplot_data(np.hstack(results_adult["CP cumulative pred sizes"])), "-o", linewidth=7, markersize=12, alpha=0.5, color="y", label="Adaptive CP")
+
+# CP cumulative sum prediction sizes 
+plt.plot(*compute_barplot_data(np.hstack(results_adult["NLCP pred sizes"])), "-o", linewidth=7, markersize=12, alpha=0.5, color="g", label="NLCP")
+
 plt.title("Prediction Set Sizes") 
 plt.xlabel("Prediction set sizes")
 plt.ylabel("Volume")
@@ -222,10 +246,41 @@ plt.clf()
 print(f"Random Forest average pred size : {np.mean(results_adult['model avg size'])}")
 print(f"Normal CP average pred size : {np.mean(results_adult['CP softmax avg size'])}")
 print(f"Adaptive CP average pred size : {np.mean(results_adult['CP cumulative avg size'])}")
+print(f"NLCP average pred size : {np.mean(results_adult['NLCP avg size'])}")
 
 print(f"Random Forest empirical coverage : {np.mean(results_adult['model empirical coverage'])}")
 print(f"Normal CP empirical coverage : {np.mean(results_adult['CP softmax empirical coverage'])}")
 print(f"Adaptive CP empirical coverage : {np.mean(results_adult['CP cumulative empirical coverage'])}")
+print(f"NLCP empirical coverage : {np.mean(results_adult['NLCP empirical coverage'])}")
+
 
 print(f"Random Forest average accuracy : {np.mean(results_adult['model accuracy'])}")
 # %%
+tilbage_test_X = test_X*std + mean
+races = enc.inverse_transform(tilbage_test_X[:, non_one_hottet:])[:, -4]
+unique, count = np.unique(races, return_counts=True)
+model_unique, model_count = np.unique(races[model_in_pred_set], return_counts=True)
+CP_unique, CP_count = np.unique(races[softmax_results.in_pred_set], return_counts=True)
+adaptive_unique, adaptive_count = np.unique(races[cumulative_results.in_pred_set], return_counts=True)
+NLCP_unique, NLCP_count = np.unique(races[NLCP_results.in_pred_set], return_counts=True)
+
+condtional_model_coverage = model_count/count
+condtional_CP_coverage = CP_count/count
+condtional_adaptive_coverage = adaptive_count/count
+condtional_NLCP_coverage = NLCP_count/count
+
+
+colors = ["red", "blue", "yellow", "green"] 
+labels = ["Cumulative Probability Mass", "Normal CP", "Adaptive CP", "NLCP"]
+plt.figure(figsize=(26, 18), dpi=200)
+plt.rc("font", size=28)
+width=0.2
+x_axis = np.arange(len(unique))
+plt.bar(x_axis - width*1.5, condtional_model_coverage, color=colors[0], width=width, label=labels[0])
+plt.bar(x_axis - width*0.5, condtional_CP_coverage, color=colors[1], width=width, label=labels[1])
+plt.bar(x_axis + width*0.5, condtional_adaptive_coverage, color=colors[2], width=width, label=labels[2])
+plt.bar(x_axis + width*1.5, condtional_NLCP_coverage, color=colors[3], width=width, label=labels[3])
+plt.xticks(x_axis, unique, rotation=5)
+plt.plot([x_axis[0]-2*width,x_axis[-1]+2*width], (1-alpha)*np.ones(2), "--", linewidth=8)
+plt.legend()
+plt.savefig("./results/adult/conditionel_coverage")
