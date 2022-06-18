@@ -1,4 +1,5 @@
 #%%
+from dataclasses import dataclass, asdict
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,145 +9,279 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.gaussian_process.kernels import Matern
+from sklearn.gaussian_process.kernels import Matern, WhiteKernel
 from Models import MultipleQuantileRegressor
 
-from CP import RegressionSquaredError, RegressionQuantile
+from CP import RegressionSquaredError, RegressionQuantile, CPEvalData
 
 
 from Toolbox.plot_helpers import barplot, scatter, compute_lim
 from Toolbox.kernels import mahalanobis_exponential, exponential, KNN, mahalanobis_KNN
-from Toolbox.tools import get_all_cp_models, multiple_split, stratified_coverage
+from Toolbox.tools import get_all_cp_models, multiple_split, evaluate2, GPWrapper
 
-from protein_data_set import X, y, stratify
+from protein_data_set import get_protein_data
+
+import os
+
+@dataclass
+class CPRegressionResults:
+    cp_results: CPEvalData
+    data: pd.DataFrame
+    X: np.ndarray
+    y: np.ndarray
+    stratify: np.ndarray
+    train_X: np.ndarray
+    cal_X: np.ndarray
+    test_X: np.ndarray
+    train_y: np.ndarray
+    cal_y: np.ndarray
+    test_y: np.ndarray
+    train_strat: np.ndarray
+    cal_strat: np.ndarray
+    test_strat: np.ndarray
+
+    def save(self, path):
+        pd.to_pickle(self, path)
+    
+    def load(path):
+        ret = pd.read_pickle(path)
+        if ret.__class__ == CPRegressionResults: return ret
+        else: raise FileExistsError('File is not a CPRegressionResults object')
+     
+
+
+def finalize_plot(show = False, path = None):
+    plt.tight_layout()
+    if path != None:
+        plt.savefig(path)
+    if show: plt.show()
+    else: plt.clf()
+
+def mpath(path):
+    path = path.strip('/')
+    path_list = path.split('/')
+    for i, p in enumerate(path_list):
+        root = "./" + "/".join(path_list[:i])
+        if not p in os.listdir(root):
+            os.mkdir(root + "/" + p)
+    return path + "/"
+
+results_path = mpath("results/protein_results/")
+
+#%%
+
+y_i = 0
+X,y,stratify, data = get_protein_data(y_i = y_i)
+
+# decimal = [1,1,1,3,1,1,1,1,0,1]
+
+# for a,b,d in zip(data.min(),data.max(),decimal):
+#     a = np.round(a, d)
+#     b = np.round(b, d)
+#     if d == 0:
+#         a = int(a)
+#         b = int(b)
+#     print(f"$[{a}~~,~~{b}]$")
 
 
 pca = PCA()
 st = StandardScaler()
 
 X_transform = X
-# X_transform = np.hstack((X_transform, X_transform**2))
+X_transform = np.hstack((X_transform, X_transform**2))
 # X_transform = np.hstack((X_transform, np.sin(X_transform), np.cos(X_transform)))
 
 X_standard = st.fit_transform(X_transform)
 X_pca = pca.fit_transform(X_standard)
 
-train_X, cal_X, test_X, train_y, cal_y, test_y, train_strat, cal_strat, test_strat = multiple_split((0.2,0.3,0.5), X_standard,y,stratify, keep_frac = 0.3)
+(train_X, cal_X, test_X,
+train_y, cal_y, test_y,
+train_strat, cal_strat, test_strat) = multiple_split((0.1,0.45,0.45), X_standard,y,stratify, keep_frac = 1.)
 
 scatter(X_pca, y, alpha = 0.6)
 plt.title("$y_{true}$ on PCs")
 plt.show()
-scatter(X_standard, y, alpha = 0.6)
-plt.title("$y_{true}$ on standardized X")
-plt.show()
+# scatter(X_standard, y, alpha = 0.6)
+# plt.title("$y_{true}$ on standardized X")
+# plt.show()
+
 
 #%%
 
 #set significance level of CP
 alpha = 0.2
+K = 200
+length_scale = 1.0
 
 # fit predictive models
-
-# Fit linear regression model
-lm = LinearRegression(n_jobs = 6)
-lm.fit(train_X, train_y)
-
-
+#%%
 # Fit Random Forest Regressor
 rf = RandomForestRegressor(n_estimators = 100, n_jobs = 6)
 rf.fit(train_X, train_y)
-
-# fit quanilt regressor (wrapper)
-# qr = MultipleQuantileRegressor(train_X, train_y, quantiles = [alpha/2, 0.5, 1-alpha/2])
-
-# Fit a GP model
-# gp_model = GaussianProcessModelWrapper(None, cal_X, cal_y, alpha)
-
-
-# Fit a GP-CP model
-# gp = GaussianProcessRegressor(Matern(), n_restarts_optimizer=10, random_state=0)
+lr = LinearRegression()
+lr.fit(train_X, train_y)
+#%%
+gp = GPWrapper(Matern() + WhiteKernel(), normalize_y=True)
 # gp.fit(train_X, train_y)
-# cpgp_ad = RegressionAdaptiveSquaredError(gp, cal_X, cal_y, alpha, 'predict', kernel = squared_exponential, verbose = True)
-# cpgp_st = RegressionAdaptiveSquaredError(gp, cal_X, cal_y, alpha, 'predict')
+
 
 #%%
 
 # create and fit cpmodels
-
-# cplm_ad_maha = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_sqe(1), verbose = True)
-# cplm_ad_KNN = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = KNN(20), verbose = True)
-# cplm_ex    =   RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict', kernel = exponential(5), verbose = True)
-# cplm_      =   RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-cprf_ex    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = exponential(0.2), verbose = True)
-# cprf_knn    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = KNN(100), verbose = True)
-cprf_      =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict')
-# cplm_st = RegressionSquaredError(lm, cal_X, cal_y, alpha, 'predict')
-# cpqr_exp =      RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = exponential(1.5), verbose = True)
-# cpqr_maha_exp = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_exponential(1.5), verbose = True)
-# cpqr_KNN =      RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = KNN(50), verbose = True)
-# cpqr_maha_KNN = RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_KNN(50), verbose = True)
-# cpqr_st =       RegressionQuantile(qr, cal_X, cal_y, alpha, 'predict')
+cprf_exp       =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = exponential(length_scale), name=f'RF, NLCP, kernel exponential ({length_scale})', verbose = True)
+cplr_exp       =   RegressionSquaredError(lr, cal_X, cal_y, alpha, 'predict', kernel = exponential(length_scale), name=f'LR, NLCP, kernel exponential ({length_scale})', verbose = True)
+# cpgp_exp       =   RegressionQuantile(gp, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_exponential(length_scale), name=f'GP, NLCP, kernel {K}-NN', verbose = True)
+# cprf_KNN_maha    =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_KNN(K), name=f'RF, NLCP, Mahalanobis {K}-NN', verbose = True)
+cprf_KNN         =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', kernel = KNN(K), name=f'RF, NLCP, kernel {K}-NN', verbose = True)
+# cplr_KNN_maha    =   RegressionSquaredError(lr, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_KNN(K), name=f'LR, NLCP, Mahalanobis {K}-NN', verbose = True)
+cplr_KNN         =   RegressionSquaredError(lr, cal_X, cal_y, alpha, 'predict', kernel = KNN(K), name=f'LR, NLCP, kernel {K}-NN', verbose = True)
+# cpgp_KNN       =   RegressionQuantile(gp, cal_X, cal_y, alpha, 'predict', kernel = mahalanobis_KNN(K), name=f'GP, NLCP, kernel {K}-NN', verbose = True)
+cprf_basic       =   RegressionSquaredError(rf, cal_X, cal_y, alpha, 'predict', name = "RF, Basic CP")
+cplr_basic       =   RegressionSquaredError(lr, cal_X, cal_y, alpha, 'predict', name = "LR, Basic CP")
+# cpgp_basic     =   RegressionQuantile(gp, cal_X, cal_y, alpha, 'predict', name = "GP Basic CP")
 
 
-
-# Evaluate cp models
-
-# cp_models = [cplm_ad, cplm_st, cpgp_ad, cpgp_st, gp_model]
-# cp_models = [cplm_ad_maha, cplm_ad_sqe, cplm_ad_KNN, cplm_st, cpqr_ad_maha, cpqr_ad_sqe, cpqr_st]
-
-# automatically recognize all cp models in the script - put in a list
-# clsmembers = set(tuple(zip(*inspect.getmembers(CP, inspect.isclass)))[0])
-# cp_models = [var for var, name in vars().items() if var.__class__.__name__ in clsmembers]
-
-
+#Evaluate CP models
+# cp_models = [cprf_KNN, cprf_basic]
+# cp_results = [cp.evaluate_coverage(test_X, test_y) for cp in cp_models]
 cp_models = get_all_cp_models(locals())
-# variables = vars()
-# cp_models = [variables[var] for var in clsmembers]
-
-# evaluate cp models in cp_models
-# Result = namedtuple("Result", ["cp_model", "y_pred", "y_pred_intervals", "y_pred_predicate", "empirical_coverage", "effective_sample_sizes"])
 cp_results = [cp.evaluate_coverage(test_X, test_y) for cp in cp_models]
 
+experiment_name = "ex 2"
+
+path = mpath(results_path + experiment_name)
+
+
+experiment_data = CPRegressionResults(cp_results, data, X, y, stratify,
+                              train_X, cal_X, test_X,
+                              train_y, cal_y, test_y,
+                              train_strat, cal_strat, test_strat,
+                              )
+
+experiment_data.save(path + "CP_data")
+
+#%% --------------------------------------------------------------------------------
+# Load experiment data
+
+experiment_name = "ex 2"
+path = mpath(results_path + experiment_name)
+experiment_data = CPRegressionResults.load(path + "CP_data")
+
+cp_results =     experiment_data.cp_results
+data =           experiment_data.data
+X =              experiment_data.X
+y =              experiment_data.y
+stratify =       experiment_data.stratify
+train_X =        experiment_data.train_X
+cal_X =          experiment_data.cal_X
+test_X =         experiment_data.test_X
+train_y =        experiment_data.train_y
+cal_y =          experiment_data.cal_y
+test_y =         experiment_data.test_y
+train_strat =    experiment_data.train_strat
+cal_strat =      experiment_data.cal_strat
+test_strat =     experiment_data.test_strat
+
+cp_result_group_names = set(map(lambda x: x.cp_model_name[:2], cp_results))
+cp_result_groups = {group:[result for result in cp_results if result.cp_model_name[:2] == group] for group in cp_result_group_names}
 
 #%%
 # plot a bunch of stuff
 
+
+
+
 test_X_pca = pca.transform(test_X)
 
-plt.rcParams["figure.figsize"] = (12, 8)
+group_dict = {'LR': 'Linear Regression',
+              'RF': 'Random Forest'}
 
-for result in cp_results:
-    print("")
-    print(result.cp_model_name)
-    print("coverage:", result.empirical_coverage)
-    print("expected prediction interval size:", np.mean(result.pred_set_sizes))
-    print("mean effective sample size", result.mean_effective_sample_size)
-    print("kernel outliers:", np.sum(result.kernel_errors))
-    print("Model mean squared error:", mean_squared_error(test_y, result.y_preds))
+plt.rcParams["figure.figsize"] = (6,4)
+plt.rcParams["figure.dpi"] = 200
+for group_name, results in cp_result_groups.items():
+    for result in results:
+        print("")
+        print(result.cp_model_name)
+        print("coverage:", result.empirical_coverage)
+        print("expected prediction interval size:", np.mean(result.pred_set_sizes))
+        print("mean effective sample size", result.mean_effective_sample_size)
+        print("kernel outliers:", np.sum(result.kernel_errors))
+        print("Model mean squared error:", mean_squared_error(test_y, result.y_preds))
+        
+        if len(set(result.pred_set_sizes)) > 10:
+            plt.hist(result.pred_set_sizes, density = True, label = result.cp_model_name[4:], alpha = 0.4, bins = 40)
+        elif "Basic" in result.cp_model_name:
+            plt.vlines(np.mean(result.pred_set_sizes), *plt.gca().get_ylim(), label = "Basic CP")
+    plt.suptitle(group_dict[group_name])
+    plt.legend()
+    # plt.tight_layout()
+    # plt.show()
+    finalize_plot(path = mpath(path + "pred_set_size_histograms") + group_dict[group_name])
     
+#%%
+
+n_bins = 20
+discard_frac = 0.1
+
+# model_names = [f'NLCP, kernel {K}-NN', "Basic CP"]
+
+for group_name, results in cp_result_groups.items():
+    for i in range(2):
+        min_x, max_x = np.quantile(test_X_pca[:,i], [discard_frac/2,1-discard_frac/2])
+        mask = (min_x <= test_X_pca[:,i]) & (max_x >= test_X_pca[:,i])
+        dx = (max_x-min_x)/n_bins
+        x_labels = np.linspace(min_x + dx/2, max_x + dx/2, n_bins, endpoint=True)
+        array = test_X_pca[mask,i]
+        
+        fig, ax1 = plt.subplots(dpi = 200, figsize = (6,4))
+        ax2 = ax1.twinx()
+        max_c =  0
+        min_c =  float('inf')
+
+        for j, result in enumerate(results):
+            conditional_coverage, count = evaluate2(array, result.in_pred_set, n_bins, min_x, max_x)
+            pred_set_size, count = evaluate2(array, result.pred_set_sizes, n_bins, min_x, max_x)
+
+            max_c =  max(max_c, np.max(conditional_coverage))
+            min_c =  min(min_c, np.min(conditional_coverage))
+            ax1.plot(x_labels, conditional_coverage, label = result.cp_model_name[4:])
+        ax2.plot(x_labels, count, label = "Bin Volume", color = 'r')
+
+        ax2.set_ylim(0, np.max(count)*4)
+        labels = ax2.get_yticks()
+        ax2.set_yticks(labels[0::2]/4)
+
+        ax1.set_ylim(min_c - (max_c-min_c)*0.5, max_c + (max_c-min_c)*0.5)
+        plt.suptitle(group_dict[group_name])
+        # labels = ax2.get_yticks()
+        # ax2.set_yticks(labels/3)
+
+
+        ax1.set_xlabel(f'PCA {i + 1}')
+        ax1.set_ylabel('Empirical bin conditional coverage')
+        ax2.set_ylabel('Number of data points')
+
+
+        ax1.legend(loc = 'upper left')
+        ax2.legend()
+        
+        finalize_plot(path = mpath(path + "binned_FSC") + group_dict[group_name])
+        # plt.show()
+        
     
-labels, empirical_conditional_coverage, n_conditional_samples = zip(*map(lambda result: stratified_coverage(test_X[:,3], result.in_pred_set, 20), cp_results))
-
-names = [r.cp_model_name for r in cp_results]
-
-fig, ax = barplot(labels[0], empirical_conditional_coverage,
-names, (14,5))
-
-plt.xticks(rotation = 45, fontsize = 20)
-plt.yticks(fontsize = 20)
-plt.xlabel("Classes", fontsize = 23)
-plt.legend(fontsize = 14, loc='center left', bbox_to_anchor=(1,0.5))
-fig.suptitle("Empirical coverage distributed over true labels", fontsize = 30)
-fig.tight_layout()
-plt.show()
 
 
 
 #%%
 
-plot_alpha = 1
+plot_alpha = 0.6
 s = 3
 lim_level = 0.005
+
+def replace(string, old_list, new):
+    for c in old_list:
+        string = string.replace(c,new)
+    return string
 
 for result in cp_results:
     plt.figure(figsize = (10,10), dpi = 300)
@@ -154,7 +289,7 @@ for result in cp_results:
     ax1.plot(
         test_y, 
         result.pred_set_sizes, 
-        '.', 
+        '.', markersize = s/2,
         alpha = plot_alpha
     )
     ax1.set_title("Prediction set set size vs $y_{true}$")
@@ -166,7 +301,7 @@ for result in cp_results:
     ax2.plot(
         np.abs(test_y-result.y_preds), 
         result.pred_set_sizes, 
-        '.', 
+        '.', markersize=s/2,
         alpha = plot_alpha
     )
     ax2.set_title("Prediction set size vs true absolute difference")
@@ -184,7 +319,6 @@ for result in cp_results:
     ax3.set_xlabel("PC 1")
     ax3.set_ylabel("PC 2")
     ax3.plot()
-    plt.suptitle(result.cp_model_name, fontsize = 15)
 
     plt.tight_layout()
 
@@ -195,12 +329,9 @@ for result in cp_results:
     ax4.set_xlabel("PC 1")
     ax4.set_ylabel("PC 2")
     ax4.plot()
-    plt.suptitle(result.cp_model_name, fontsize = 15)
-    plt.show()
+    plt.suptitle(group_dict[result.cp_model_name[:2]] + result.cp_model_name[2:], fontsize = 15)
 
-
-
-
+    finalize_plot(path = mpath(path + "overview_plots") + replace(result.cp_model_name, r'.<>:"/\|?*', "_"))
 
 
 
