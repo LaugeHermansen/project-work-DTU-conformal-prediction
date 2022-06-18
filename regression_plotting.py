@@ -6,6 +6,8 @@ from sklearn.decomposition import PCA
 from Toolbox.plot_helpers import barplot, scatter, compute_lim, finalize_plot
 from sklearn.metrics import mean_squared_error
 
+show_plots = True
+
 pca = PCA()
 results_path = mpath("results/protein_results/")
 
@@ -41,14 +43,14 @@ plt.rcParams["figure.figsize"] = (6,4)
 plt.rcParams["figure.dpi"] = 200
 
 #%%
-show = False
+
 X_pca = pca.fit_transform(X_standard)
 test_X_pca = pca.transform(test_X)
 
 scatter(X_pca, y, alpha = 0.6)
 plt.title("$y_{true}$ on PCs")
 # plt.show()
-finalize_plot(path = path + "PCA_of_X", show=show)
+finalize_plot(path = path + "PCA_of_X", show=show_plots)
 
 #%%
 
@@ -83,7 +85,7 @@ for group_name, results in cp_result_groups.items():
     plt.legend()
     # plt.tight_layout()
     # plt.show()
-    finalize_plot(path = path + "pred_set_size_histograms_" + group_dict[group_name], show=show)
+    finalize_plot(path = path + "pred_set_size_histograms_" + group_dict[group_name], show=show_plots)
     
 #%%
 
@@ -145,7 +147,7 @@ for group_name, results in cp_result_groups.items():
 
         ax1.legend(loc = 'upper left')
         ax2.legend()
-        finalize_plot(path = path + "binned_FSC_" + f"PC{i+1}_{group_dict[group_name]}", show=show)
+        finalize_plot(path = path + "binned_FSC_" + f"PC{i+1}_{group_dict[group_name]}", show=show_plots)
 
         
 #%%
@@ -182,13 +184,10 @@ for group_name, results in cp_result_groups.items():
         ax1.plot(x_labels, conditional_coverage, label = f"{result.cp_model_name[4:]}, sd={conditional_coverage_std[-1]:.4f}",
                  linewidth=linewidth, alpha=alpha)
 
-    # ax1.set_ylim(min_c - (max_c-min_c)*0.4, max_c + (max_c-min_c)*0.5)
-    if "Basic" in result.cp_model_name:
-        plt.vlines(np.mean(result.pred_set_sizes), *plt.gca().get_ylim(), label = "Basic CP", color='black', linewidth = 6, alpha = 0.4)
+    # for r in results:
+        # if "Basic" in result.cp_model_name:
+        #     plt.vlines(np.mean(result.pred_set_sizes), *plt.gca().get_ylim(), label = "Basic CP", color='black', linewidth = 6, alpha = 0.4)
     plt.suptitle(group_dict[group_name])
-    # labels = ax2.get_yticks()
-    # ax2.set_yticks(labels/3)
-
 
     ax1.set_xlabel(f'Prediction Set Size')
     ax1.set_ylabel('Empirical bin conditional coverage')
@@ -196,7 +195,7 @@ for group_name, results in cp_result_groups.items():
 
     ax1.legend(loc = 'upper left')
     ax2.legend()
-    finalize_plot(path = path + "binned_SSC_" + f"{group_dict[group_name]}", show=show)
+    finalize_plot(path = path + "binned_SSC_" + f"{group_dict[group_name]}", show=show_plots)
 
 
 #%%
@@ -221,7 +220,7 @@ for result in cp_results:
     )
     ax1.set_title("Prediction set set size vs $y_{true}$")
     ax1.set_xlabel("True label, $y_{true}$")
-    ax1.set_ylabel(r"Prediction set size $|\tau(X)|$")
+    ax1.set_ylabel(r"Prediction set size $|\hat C(x)|$")
     ax1.set_ylim(compute_lim(result.pred_set_sizes, lim_level))
 
     ax2 = plt.subplot2grid((4, 5), (2, 0), rowspan=2, colspan=2)
@@ -233,7 +232,7 @@ for result in cp_results:
     )
     ax2.set_title("Prediction set size vs true absolute difference")
     ax2.set_xlabel("$|y_{pred}-y_{true}$|")
-    ax2.set_ylabel(r"Prediction set size $|\tau(X)|$")
+    ax2.set_ylabel(r"Prediction set size $|\hat C(x)|$")
     xlim = ax2.get_xlim()
     if not "Basic" in result.cp_model_name:
         ax2.plot([0,100],[0,200], label="Prediction set border")
@@ -256,13 +255,13 @@ for result in cp_results:
     ax4 = plt.subplot2grid((4, 5), (2, 2), rowspan=2, colspan=3)
     quantity = np.abs(result.y_preds - test_y)
     scatter(test_X_pca, quantity, adapt_lim_level=lim_level, alpha=plot_alpha, s=s)
-    ax4.set_title('Squared error on first two PCs')
+    ax4.set_title('Absolute difference')
     ax4.set_xlabel("PC 1")
     ax4.set_ylabel("PC 2")
     ax4.plot()
     plt.suptitle(group_dict[result.cp_model_name[:2]] + result.cp_model_name[2:], fontsize = 15)
 
-    finalize_plot(path = path + "overview_plots_" + replace(result.cp_model_name, r'.<>:"/\|?*', "_"), show=show)
+    finalize_plot(path = path + "overview_plots_" + replace(result.cp_model_name, r'.<>:"/\|?*', "_"), show=show_plots)
 
 
 
@@ -271,6 +270,8 @@ for result in cp_results:
 
 
 #%%
+
+# export latex table
 
 a = "{D^{test}}"
 b = "|\hat C(x)|"
