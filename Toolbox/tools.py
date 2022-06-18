@@ -1,13 +1,14 @@
 from sklearn.model_selection import train_test_split
 import numpy as np
-import sys, inspect
-import CP
+import inspect
+from CP import CPEvalData
 import matplotlib.pyplot as plt
-from collections import defaultdict
 import pickle
 from sklearn.gaussian_process import GaussianProcessRegressor
 from scipy.stats import norm
-
+import pandas as pd
+from dataclasses import dataclass
+import os
 
 def multiple_split(split_sizes, *arrays, keep_frac = 1.):
     """
@@ -38,7 +39,7 @@ def multiple_split(split_sizes, *arrays, keep_frac = 1.):
 
     split_sizes = np.array(split_sizes)
     splits_sum = np.cumsum(split_sizes[::-1])[::-1]
-    if splits_sum[0] != 1: print("Warning: splits should sum to 1")
+    if splits_sum[0] < 1-1e-4: print("Warning: splits should sum to 1")
     test_sizes = 1-split_sizes/splits_sum
     ret = []
     for test_size in test_sizes[:-1]:
@@ -102,3 +103,38 @@ class GPWrapper(GaussianProcessRegressor):
     
     def __call__(self, *args, **kwargs):
         return self.predict(*args, **kwargs)
+
+@dataclass
+class CPRegressionResults:
+    cp_results: CPEvalData
+    data: pd.DataFrame
+    X_standard: np.ndarray
+    y: np.ndarray
+    stratify: np.ndarray
+    train_X: np.ndarray
+    cal_X: np.ndarray
+    test_X: np.ndarray
+    train_y: np.ndarray
+    cal_y: np.ndarray
+    test_y: np.ndarray
+    train_strat: np.ndarray
+    cal_strat: np.ndarray
+    test_strat: np.ndarray
+
+    def save(self, path):
+        pd.to_pickle(self, path)
+    
+    def load(path):
+        ret = pd.read_pickle(path)
+        if ret.__class__ == CPRegressionResults: return ret
+        else: raise FileExistsError('File is not a CPRegressionResults object')
+     
+
+def mpath(path):
+    path = path.strip('/')
+    path_list = path.split('/')
+    for i, p in enumerate(path_list):
+        root = "./" + "/".join(path_list[:i])
+        if not p in os.listdir(root):
+            os.mkdir(root + "/" + p)
+    return path + "/"
