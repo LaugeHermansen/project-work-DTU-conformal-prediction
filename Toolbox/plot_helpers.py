@@ -34,3 +34,11 @@ def scatter(axis_data, color_data, feature1: int = 0, feature2: int = 1,
 
 def compute_lim(array, level = 0.005, n_std = 0.5):
     return np.quantile(array, [level/2,1-level/2]) + n_std*np.std(array)*np.array([-1,1])
+
+
+def finalize_plot(show = False, path = None, tight = True):
+    if tight: plt.tight_layout()
+    if path != None:
+        plt.savefig(path)
+    if show: plt.show()
+    else: plt.clf()

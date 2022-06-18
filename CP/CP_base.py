@@ -110,9 +110,8 @@ class Base():
         self.alpha = alpha
         self.raise_error_at_outliers = raise_error_at_outliers
         
-        name = name if name != None else f"{self.__class__.__name__} {model.__class__.__name__}"
-        if self.adaptive: name = f"{name} LCP, kernel: {self.kernel.__name__}"
-        self.name = name
+        self.name = name if name != None else f"{self.__class__.__name__} {model.__class__.__name__}"
+        if self.adaptive and name == None: self.name = f"{self.name} LCP, H = {self.kernel.__name__}"
         self.calibrate(calibration_set_x, calibration_set_y)
     
 

@@ -5,3 +5,4 @@ from .CP_base import Base
 from .Regression_base import RegressionBase
 from .Regression_squared_error import RegressionSquaredError
 from .Regression_quantile import RegressionQuantile
+from .CP_base import CPEvalData
