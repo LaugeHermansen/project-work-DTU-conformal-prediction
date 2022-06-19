@@ -1,7 +1,6 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-from sympy import hyper
 
 from CP import ClassificationCumulativeSoftmax, ClassificationSoftmax
 from CP.CP_base import CPEvalData

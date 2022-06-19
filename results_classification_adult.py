@@ -5,7 +5,6 @@ from scipy.stats import norm
 import os 
 import pickle
 import matplotlib.pyplot as plt
-from sympy import hyper
 
 from CP import ClassificationCumulativeSoftmax, ClassificationSoftmax
 from CP.CP_base import CPEvalData

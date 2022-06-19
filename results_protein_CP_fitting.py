@@ -1,21 +1,12 @@
 #%%
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.gaussian_process.kernels import Matern, WhiteKernel
-from Models import MultipleQuantileRegressor
 
-from CP import RegressionSquaredError, RegressionQuantile, CPEvalData
+from CP import RegressionSquaredError
 
-
-from Toolbox.plot_helpers import barplot, scatter, compute_lim
-from Toolbox.kernels import mahalanobis_exponential, exponential, KNN, mahalanobis_KNN
+from Toolbox.kernels import exponential, KNN
 from Toolbox.tools import get_all_cp_models, multiple_split, evaluate2, GPWrapper, mpath, CPRegressionResults
 
 from protein_data_set import get_protein_data
